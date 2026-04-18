@@ -1,0 +1,298 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+export type UserRole = 'owner' | 'employee' | 'customer' | 'admin';
+
+export interface User {
+  id: string;
+  name: string;
+  role: UserRole;
+  email: string;
+  avatar: string;
+  status: 'active' | 'inactive';
+  lastActive: string;
+  location?: string;
+}
+
+export interface Salon {
+  id: string;
+  name: string;
+  location: string;
+  status: 'Active' | 'Onboarding' | 'Suspended';
+  revenue: string;
+  ownerName: string;
+  email: string;
+  phone: string;
+  staffCount: number;
+  description: string;
+  joinedDate: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  timestamp: string;
+  action: string;
+  user: string;
+  status: 'Success' | 'Warning' | 'Error';
+  type: 'system' | 'user' | 'salon';
+}
+
+export interface Booking {
+  id: string;
+  clientId: string;
+  clientName: string;
+  service: string;
+  stylistId: string;
+  stylistName: string;
+  date: string;
+  time: string;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  price: number;
+}
+
+export interface Staff {
+  id: string;
+  name: string;
+  role: string;
+  rating: number;
+  revenue: number;
+  avatar: string;
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: string;
+  stock: number;
+  minStock: number;
+  price: number;
+}
+
+interface SalonContextType {
+  user: User | null;
+  login: (role: UserRole) => void;
+  logout: () => void;
+  bookings: Booking[];
+  addBooking: (booking: Omit<Booking, 'id'>) => void;
+  updateBookingStatus: (id: string, status: Booking['status']) => void;
+  staff: Staff[];
+  addStaff: (staffMember: Omit<Staff, 'id' | 'rating' | 'revenue'>) => void;
+  inventory: InventoryItem[];
+  updateInventory: (id: string, stock: number) => void;
+  orderSupplies: (id: string, quantity: number) => void;
+  salons: Salon[];
+  addSalon: (salon: Omit<Salon, 'id' | 'joinedDate' | 'revenue' | 'staffCount'>) => void;
+  users: User[];
+  updateUserProfile: (data: Partial<User>) => void;
+  activityLogs: ActivityLog[];
+}
+
+const SalonContext = createContext<SalonContextType | undefined>(undefined);
+
+export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [bookings, setBookings] = useState<Booking[]>([
+    { id: '1', clientId: 'c1', clientName: 'Sarah J.', service: 'Balayage & Cut', stylistId: 's1', stylistName: 'Alex Rivers', date: '2026-04-15', time: '10:30 AM', status: 'confirmed', price: 180 },
+    { id: '2', clientId: 'c2', clientName: 'Michael R.', service: 'Men\'s Executive Cut', stylistId: 's2', stylistName: 'Jordan Lee', date: '2026-04-15', time: '11:45 AM', status: 'pending', price: 65 },
+  ]);
+
+  const [staff, setStaff] = useState<Staff[]>([
+    { id: 's1', name: 'Alex Rivers', role: 'Senior Stylist', rating: 4.9, revenue: 4200, avatar: 'https://picsum.photos/seed/s1/100/100' },
+    { id: 's2', name: 'Jordan Lee', role: 'Master Barber', rating: 4.8, revenue: 3800, avatar: 'https://picsum.photos/seed/s2/100/100' },
+    { id: 's3', name: 'Casey Smith', role: 'Color Specialist', rating: 4.7, revenue: 5100, avatar: 'https://picsum.photos/seed/s3/100/100' },
+  ]);
+
+  const [inventory, setInventory] = useState<InventoryItem[]>([
+    { id: 'i1', name: 'Zenith Silk Shampoo', category: 'Haircare', stock: 45, minStock: 10, price: 32 },
+    { id: 'i2', name: 'Luxe Hold Spray', category: 'Styling', stock: 8, minStock: 15, price: 28 },
+    { id: 'i3', name: 'Hydra-Mist Conditioner', category: 'Haircare', stock: 22, minStock: 10, price: 35 },
+  ]);
+
+  const [salons, setSalons] = useState<Salon[]>([
+    { 
+      id: 'sal1', 
+      name: 'Zenith Flagship', 
+      location: 'New York, NY', 
+      status: 'Active', 
+      revenue: '$1.2M', 
+      ownerName: 'Rafia Wes', 
+      email: 'nyc@zenith.com', 
+      phone: '+1 (212) 555-0198',
+      staffCount: 24,
+      description: 'The original Zenith experience in the heart of Manhattan.',
+      joinedDate: '2024-01-15'
+    },
+    { 
+      id: 'sal2', 
+      name: 'Luxe Artistry', 
+      location: 'Los Angeles, CA', 
+      status: 'Active', 
+      revenue: '$850K', 
+      ownerName: 'Elena Rodriguez', 
+      email: 'la@luxeart.com', 
+      phone: '+1 (310) 555-0123',
+      staffCount: 18,
+      description: 'Modern minimalism meets Hollywood glamour.',
+      joinedDate: '2024-06-20'
+    },
+    { 
+      id: 'sal3', 
+      name: 'Ethereal Cuts', 
+      location: 'London, UK', 
+      status: 'Onboarding', 
+      revenue: '$0', 
+      ownerName: 'James Sterling', 
+      email: 'london@ethereal.uk', 
+      phone: '+44 20 7946 0123',
+      staffCount: 0,
+      description: 'Our first European expansion bringing the Zenith ritual to London.',
+      joinedDate: '2026-04-01'
+    },
+  ]);
+
+  const [users, setUsers] = useState<User[]>([
+    { id: 'o1', name: 'Rafia Wes', role: 'owner', email: 'owner@zenith.com', avatar: 'https://picsum.photos/seed/owner/100/100', status: 'active', lastActive: '2 mins ago', location: 'New York' },
+    { id: 's1', name: 'Alex Rivers', role: 'employee', email: 'alex@zenith.com', avatar: 'https://picsum.photos/seed/s1/100/100', status: 'active', lastActive: 'Just now', location: 'New York' },
+    { id: 's2', name: 'Jordan Lee', role: 'employee', email: 'jordan@zenith.com', avatar: 'https://picsum.photos/seed/s2/100/100', status: 'active', lastActive: '1 hour ago', location: 'Los Angeles' },
+    { id: 'a1', name: 'System Admin', role: 'admin', email: 'admin@zenith.com', avatar: 'https://picsum.photos/seed/admin/100/100', status: 'active', lastActive: 'Just now', location: 'Global' },
+  ]);
+
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([
+    { id: 'l1', timestamp: '2026-04-15 10:25:45', action: 'New Salon Registered: "Ethereal Cuts"', user: 'admin_01', status: 'Success', type: 'salon' },
+    { id: 'l2', timestamp: '2026-04-15 09:12:10', action: 'System Backup Completed', user: 'system', status: 'Success', type: 'system' },
+    { id: 'l3', timestamp: '2026-04-15 08:45:22', action: 'Failed Login Attempt', user: 'unknown_ip', status: 'Warning', type: 'user' },
+    { id: 'l4', timestamp: '2026-04-15 07:30:00', action: 'Inventory Alert: Luxe Hold Spray', user: 'system', status: 'Warning', type: 'salon' },
+  ]);
+
+  const login = (role: UserRole) => {
+    const foundUser = users.find(u => u.role === role);
+    if (foundUser) {
+      setUser(foundUser);
+    } else {
+      // Fallback for customer/guest
+      setUser({ id: 'guest', name: 'Guest User', role: 'customer', email: 'guest@example.com', avatar: 'https://picsum.photos/seed/guest/100/100', status: 'active', lastActive: 'Just now' });
+    }
+  };
+
+  const logout = () => setUser(null);
+
+  const addSalon = (salonData: Omit<Salon, 'id' | 'joinedDate' | 'revenue' | 'staffCount'>) => {
+    const newSalon: Salon = {
+      ...salonData,
+      id: `sal${salons.length + 1}`,
+      joinedDate: new Date().toISOString().split('T')[0],
+      revenue: '$0',
+      staffCount: 0
+    };
+    setSalons(prev => [newSalon, ...prev]);
+    
+    // Log activity
+    const newLog: ActivityLog = {
+      id: `l${activityLogs.length + 1}`,
+      timestamp: new Date().toLocaleString(),
+      action: `New Salon Registered: "${newSalon.name}"`,
+      user: user?.name || 'System',
+      status: 'Success',
+      type: 'salon'
+    };
+    setActivityLogs(prev => [newLog, ...prev]);
+  };
+
+  const addBooking = (booking: Omit<Booking, 'id'>) => {
+    const newBooking = { ...booking, id: Math.random().toString(36).substr(2, 9) };
+    setBookings(prev => [newBooking, ...prev]);
+  };
+
+  const updateBookingStatus = (id: string, status: Booking['status']) => {
+    setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b));
+  };
+
+  const updateInventory = (id: string, stock: number) => {
+    setInventory(prev => prev.map(item => item.id === id ? { ...item, stock } : item));
+  };
+
+  const orderSupplies = (id: string, quantity: number) => {
+    setInventory(prev => prev.map(item => 
+      item.id === id ? { ...item, stock: item.stock + quantity } : item
+    ));
+    
+    // Log activity
+    const item = inventory.find(i => i.id === id);
+    const newLog: ActivityLog = {
+      id: `l${activityLogs.length + 1}`,
+      timestamp: new Date().toLocaleString(),
+      action: `Ordered ${quantity} units of ${item?.name}`,
+      user: user?.name || 'Owner',
+      status: 'Success',
+      type: 'salon'
+    };
+    setActivityLogs(prev => [newLog, ...prev]);
+  };
+
+  const addStaff = (staffData: Omit<Staff, 'id' | 'rating' | 'revenue'>) => {
+    const newStaff: Staff = {
+      ...staffData,
+      id: `s${staff.length + 1}`,
+      rating: 5.0,
+      revenue: 0
+    };
+    setStaff(prev => [...prev, newStaff]);
+
+    // Also add to users list for login
+    const newUser: User = {
+      id: newStaff.id,
+      name: newStaff.name,
+      role: 'employee',
+      email: `${newStaff.name.toLowerCase().replace(' ', '.')}@zenith.com`,
+      avatar: newStaff.avatar,
+      status: 'active',
+      lastActive: 'Just joined'
+    };
+    setUsers(prev => [...prev, newUser]);
+
+    // Log activity
+    const newLog: ActivityLog = {
+      id: `l${activityLogs.length + 1}`,
+      timestamp: new Date().toLocaleString(),
+      action: `New Staff Hired: "${newStaff.name}"`,
+      user: user?.name || 'Owner',
+      status: 'Success',
+      type: 'user'
+    };
+    setActivityLogs(prev => [newLog, ...prev]);
+  };
+
+  const updateUserProfile = (data: Partial<User>) => {
+    if (!user) return;
+    const updatedUser = { ...user, ...data };
+    setUser(updatedUser);
+    setUsers(prev => prev.map(u => u.id === user.id ? { ...u, ...data } : u));
+    
+    // Log activity
+    const newLog: ActivityLog = {
+      id: `l${activityLogs.length + 1}`,
+      timestamp: new Date().toLocaleString(),
+      action: `Profile Updated: ${Object.keys(data).join(', ')}`,
+      user: user.name,
+      status: 'Success',
+      type: 'user'
+    };
+    setActivityLogs(prev => [newLog, ...prev]);
+  };
+
+  return (
+    <SalonContext.Provider value={{ 
+      user, login, logout, bookings, addBooking, updateBookingStatus, staff, addStaff, inventory, updateInventory, orderSupplies,
+      salons, addSalon, users, updateUserProfile, activityLogs
+    }}>
+      {children}
+    </SalonContext.Provider>
+  );
+};
+
+export const useSalon = () => {
+  const context = useContext(SalonContext);
+  if (context === undefined) {
+    throw new Error('useSalon must be used within a SalonProvider');
+  }
+  return context;
+};
