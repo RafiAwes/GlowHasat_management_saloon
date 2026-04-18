@@ -13,6 +13,8 @@ import {
   Award
 } from 'lucide-react';
 
+export const APP_TAGLINE = 'Luxury salon operations, unified in one intelligent dashboard.';
+
 export const OWNER_NAV = [
   { label: 'Dashboard', href: '/owner/dashboard', icon: <LayoutDashboard size={20} /> },
   { label: 'Analytics', href: '/owner/analytics', icon: <BarChart3 size={20} /> },
