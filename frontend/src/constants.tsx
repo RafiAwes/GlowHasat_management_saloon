@@ -37,7 +37,7 @@ export const EMPLOYEE_NAV = [
 ];
 
 export const CUSTOMER_NAV = [
-  { label: 'Home', href: 'customer/home', icon: <Building2 size={20} /> },
+  { label: 'Home', href: '/customer/home', icon: <Building2 size={20} /> },
   { label: 'Book Now', href: '/customer/book', icon: <Calendar size={20} /> },
   { label: 'My History', href: '/customer/history', icon: <History size={20} /> },
   { label: 'Loyalty', href: '/customer/loyalty', icon: <Award size={20} /> },
