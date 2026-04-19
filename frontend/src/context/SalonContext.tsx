@@ -25,6 +25,17 @@ export interface Salon {
   staffCount: number;
   description: string;
   joinedDate: string;
+  openingHours: string;
+}
+
+export interface Discount {
+  id: string;
+  salonId: string;
+  title: string;
+  description: string;
+  percentage: number;
+  code: string;
+  expiryDate: string;
 }
 
 export interface ActivityLog {
@@ -83,6 +94,9 @@ interface SalonContextType {
   addSalon: (salon: Omit<Salon, 'id' | 'joinedDate' | 'revenue' | 'staffCount'>) => void;
   users: User[];
   updateUserProfile: (data: Partial<User>) => void;
+  deleteStaff: (id: string) => void;
+  discounts: Discount[];
+  addDiscount: (discount: Omit<Discount, 'id'>) => void;
   activityLogs: ActivityLog[];
 }
 
@@ -102,7 +116,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   ]);
 
   const [inventory, setInventory] = useState<InventoryItem[]>([
-    { id: 'i1', name: 'Zenith Silk Shampoo', category: 'Haircare', stock: 45, minStock: 10, price: 32 },
+    { id: 'i1', name: 'GlowHaat Silk Shampoo', category: 'Haircare', stock: 45, minStock: 10, price: 32 },
     { id: 'i2', name: 'Luxe Hold Spray', category: 'Styling', stock: 8, minStock: 15, price: 28 },
     { id: 'i3', name: 'Hydra-Mist Conditioner', category: 'Haircare', stock: 22, minStock: 10, price: 35 },
   ]);
@@ -110,7 +124,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [salons, setSalons] = useState<Salon[]>([
     { 
       id: 'sal1', 
-      name: 'Zenith Flagship', 
+      name: 'GlowHaat Flagship', 
       location: 'New York, NY', 
       status: 'Active', 
       revenue: '$1.2M', 
@@ -118,8 +132,9 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       email: 'nyc@zenith.com', 
       phone: '+1 (212) 555-0198',
       staffCount: 24,
-      description: 'The original Zenith experience in the heart of Manhattan.',
-      joinedDate: '2024-01-15'
+      description: 'The original GlowHaat experience in the heart of Manhattan.',
+      joinedDate: '2024-01-15',
+      openingHours: 'Mon-Sat: 9 AM - 8 PM, Sun: 10 AM - 6 PM'
     },
     { 
       id: 'sal2', 
@@ -132,7 +147,8 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       phone: '+1 (310) 555-0123',
       staffCount: 18,
       description: 'Modern minimalism meets Hollywood glamour.',
-      joinedDate: '2024-06-20'
+      joinedDate: '2024-06-20',
+      openingHours: 'Tue-Sun: 10 AM - 9 PM'
     },
     { 
       id: 'sal3', 
@@ -144,9 +160,15 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       email: 'london@ethereal.uk', 
       phone: '+44 20 7946 0123',
       staffCount: 0,
-      description: 'Our first European expansion bringing the Zenith ritual to London.',
-      joinedDate: '2026-04-01'
+      description: 'Our first European expansion bringing the GlowHaat ritual to London.',
+      joinedDate: '2026-04-01',
+      openingHours: 'Mon-Sun: 9 AM - 10 PM'
     },
+  ]);
+
+  const [discounts, setDiscounts] = useState<Discount[]>([
+    { id: 'd1', salonId: 'sal1', title: 'Grand Opening', description: '20% off all services for first-time clients.', percentage: 20, code: 'GLOW20', expiryDate: '2026-05-01' },
+    { id: 'd2', salonId: 'sal1', title: 'Spring Special', description: 'Complementary ritual with any coloring service.', percentage: 15, code: 'SPRINK15', expiryDate: '2026-04-30' },
   ]);
 
   const [users, setUsers] = useState<User[]>([
@@ -242,7 +264,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       id: newStaff.id,
       name: newStaff.name,
       role: 'employee',
-      email: `${newStaff.name.toLowerCase().replace(' ', '.')}@zenith.com`,
+      email: `${newStaff.name.toLowerCase().replace(' ', '.')}@glowhaat.com`,
       avatar: newStaff.avatar,
       status: 'active',
       lastActive: 'Just joined'
@@ -257,6 +279,42 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       user: user?.name || 'Owner',
       status: 'Success',
       type: 'user'
+    };
+    setActivityLogs(prev => [newLog, ...prev]);
+  };
+
+  const deleteStaff = (id: string) => {
+    const staffMember = staff.find(s => s.id === id);
+    setStaff(prev => prev.filter(s => s.id !== id));
+    setUsers(prev => prev.filter(u => u.id !== id));
+    
+    // Log activity
+    const newLog: ActivityLog = {
+      id: `l${activityLogs.length + 1}`,
+      timestamp: new Date().toLocaleString(),
+      action: `Staff Member Removed: "${staffMember?.name}"`,
+      user: user?.name || 'Owner',
+      status: 'Warning',
+      type: 'user'
+    };
+    setActivityLogs(prev => [newLog, ...prev]);
+  };
+
+  const addDiscount = (discount: Omit<Discount, 'id'>) => {
+    const newDiscount: Discount = {
+      ...discount,
+      id: `d${discounts.length + 1}`
+    };
+    setDiscounts(prev => [newDiscount, ...prev]);
+
+    // Log activity
+    const newLog: ActivityLog = {
+      id: `l${activityLogs.length + 1}`,
+      timestamp: new Date().toLocaleString(),
+      action: `New Discount Created: "${newDiscount.title}"`,
+      user: user?.name || 'Owner',
+      status: 'Success',
+      type: 'salon'
     };
     setActivityLogs(prev => [newLog, ...prev]);
   };
@@ -281,8 +339,8 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   return (
     <SalonContext.Provider value={{ 
-      user, login, logout, bookings, addBooking, updateBookingStatus, staff, addStaff, inventory, updateInventory, orderSupplies,
-      salons, addSalon, users, updateUserProfile, activityLogs
+      user, login, logout, bookings, addBooking, updateBookingStatus, staff, addStaff, deleteStaff, inventory, updateInventory, orderSupplies,
+      salons, addSalon, users, updateUserProfile, discounts, addDiscount, activityLogs
     }}>
       {children}
     </SalonContext.Provider>

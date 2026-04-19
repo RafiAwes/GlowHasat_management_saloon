@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Calendar, 
   History, 
@@ -16,6 +17,122 @@ import { useSalon } from '@/src/context/SalonContext';
 import { cn } from '@/src/lib/utils';
 import { CUSTOMER_NAV } from '@/src/constants';
 
+export const CustomerHome = () => {
+  const { salons, discounts, bookings, user } = useSalon();
+  const navigate = useNavigate();
+  
+  const upcomingBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'pending');
+  
+  return (
+    <DashboardLayout navItems={CUSTOMER_NAV} title="Welcome Back" userRole="Client">
+      <div className="space-y-8">
+        {/* Welcome Hero */}
+        <section className="bg-salon-espresso text-white p-8 sm:p-12 rounded-[2rem] relative overflow-hidden">
+          <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-salon-gold/20 rounded-full blur-[80px]"></div>
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
+            <div>
+              <h1 className="text-3xl sm:text-5xl font-serif font-bold mb-4">Hello, {user?.name || 'Guest'}</h1>
+              <p className="text-salon-cream/70 max-w-md">Your next ritual of transformation is just a few clicks away. Explore our artisan network.</p>
+            </div>
+            <div className="flex gap-4">
+              <GlassContainer className="bg-white/5 border-white/10 p-4 text-center min-w-[120px]">
+                <p className="text-2xl font-serif font-bold">750</p>
+                <p className="text-[10px] uppercase tracking-widest opacity-50 font-bold">Points</p>
+              </GlassContainer>
+              <GlassContainer className="bg-white/5 border-white/10 p-4 text-center min-w-[120px]">
+                <p className="text-2xl font-serif font-bold">{upcomingBookings.length}</p>
+                <p className="text-[10px] uppercase tracking-widest opacity-50 font-bold">Bookings</p>
+              </GlassContainer>
+            </div>
+          </div>
+        </section>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Active Discounts */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="flex items-center justify-between px-2">
+              <h3 className="text-2xl font-serif font-bold text-salon-espresso">Current Promotions</h3>
+              <Sparkles size={20} className="text-salon-gold" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {discounts.map(d => (
+                <GlassContainer key={d.id} className="p-6 bg-salon-cream/20 border-salon-ivory hover:border-salon-gold transition-all">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="w-10 h-10 bg-salon-gold/10 rounded-xl flex items-center justify-center text-salon-bronze">
+                      <Scissors size={24} />
+                    </div>
+                    <span className="bg-salon-espresso text-white text-[10px] font-bold px-2 py-1 rounded-full">{d.percentage}% OFF</span>
+                  </div>
+                  <h4 className="text-lg font-serif font-bold text-salon-espresso">{d.title}</h4>
+                  <p className="text-sm text-salon-gold mb-4">{d.description}</p>
+                  <div className="flex items-center justify-between pt-4 border-t border-salon-ivory/50">
+                    <code className="text-[10px] font-mono bg-salon-cream px-2 py-1 rounded border border-salon-ivory">{d.code}</code>
+                    <p className="text-[10px] text-salon-gold font-bold uppercase">Expires: {d.expiryDate}</p>
+                  </div>
+                </GlassContainer>
+              ))}
+            </div>
+
+            {/* Salon Network Details */}
+            <h3 className="text-2xl font-serif font-bold text-salon-espresso px-2 mt-12">Our Ritual Locations</h3>
+            <div className="space-y-4">
+              {salons.map(s => (
+                <GlassContainer key={s.id} className="p-6 flex flex-col sm:flex-row justify-between gap-6">
+                  <div className="flex gap-4">
+                    <div className="w-12 h-12 bg-salon-espresso text-salon-bg rounded-xl flex items-center justify-center flex-shrink-0">
+                      <MapPin size={24} />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-serif font-bold text-salon-espresso">{s.name}</h4>
+                      <p className="text-sm text-salon-gold">{s.location}</p>
+                      <p className="text-xs text-salon-gold/80 italic mt-1">{s.description}</p>
+                    </div>
+                  </div>
+                  <div className="sm:text-right flex flex-col justify-center gap-1">
+                    <div className="flex items-center sm:justify-end gap-2 text-salon-gold">
+                      <Clock size={14} />
+                      <span className="text-xs font-bold uppercase tracking-widest">{s.openingHours}</span>
+                    </div>
+                    <p className="text-[10px] text-salon-gold/60 uppercase tracking-tighter">{s.phone}</p>
+                  </div>
+                </GlassContainer>
+              ))}
+            </div>
+          </div>
+
+          {/* Activity Feed / Upcoming */}
+          <div className="space-y-6">
+            <h3 className="text-2xl font-serif font-bold text-salon-espresso px-2">Your Schedule</h3>
+            <div className="space-y-4">
+              {upcomingBookings.length > 0 ? upcomingBookings.map(b => (
+                <GlassContainer key={b.id} className="p-4 border-l-4 border-l-salon-gold">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-bold text-salon-espresso">{b.service}</h4>
+                    <span className="text-[10px] text-salon-gold uppercase font-bold">{b.status}</span>
+                  </div>
+                  <p className="text-xs text-salon-gold">{b.stylistName}</p>
+                  <p className="text-[10px] font-bold text-salon-bronze mt-2 uppercase">{b.date} @ {b.time}</p>
+                </GlassContainer>
+              )) : (
+                <div className="p-8 text-center bg-salon-cream/20 rounded-2xl border border-dashed border-salon-ivory text-salon-gold italic text-sm">
+                  No upcoming appointments.
+                </div>
+              )}
+              <StylizedButton 
+                variant="outline" 
+                className="w-full"
+                onClick={() => navigate('/customer/book')}
+              >
+                Book New Session
+              </StylizedButton>
+            </div>
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+};
+
 export const CustomerBook = () => {
   const { staff, addBooking, user } = useSalon();
   const [step, setStep] = useState(1);
@@ -31,7 +148,7 @@ export const CustomerBook = () => {
   const services = [
     { id: 's1', name: 'Signature Cut', price: 85, duration: '60 min', desc: 'Precision cutting tailored to your features.' },
     { id: 's2', name: 'Balayage Artistry', price: 220, duration: '150 min', desc: 'Hand-painted highlights for a natural glow.' },
-    { id: 's3', name: 'Zenith Treatment', price: 65, duration: '45 min', desc: 'Deep conditioning ritual for silk-like hair.' },
+    { id: 's3', name: 'GlowHaat Treatment', price: 65, duration: '45 min', desc: 'Deep conditioning ritual for silk-like hair.' },
   ];
 
   const handleComplete = () => {
@@ -195,10 +312,12 @@ export const CustomerBook = () => {
 
 export const CustomerHistory = () => {
   const { bookings } = useSalon();
+  const navigate = useNavigate();
+
   return (
     <DashboardLayout navItems={CUSTOMER_NAV} title="My History" userRole="Client">
       <div className="space-y-6">
-        {bookings.map((booking) => (
+        {bookings.length > 0 ? bookings.map((booking) => (
           <GlassContainer key={booking.id} className="p-6 flex items-center justify-between">
             <div className="flex items-center gap-6">
               <div className="w-16 h-16 bg-salon-cream rounded-2xl flex items-center justify-center text-salon-gold">
@@ -220,7 +339,16 @@ export const CustomerHistory = () => {
               </span>
             </div>
           </GlassContainer>
-        ))}
+        )) : (
+          <div className="text-center py-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="w-20 h-20 bg-salon-cream rounded-full flex items-center justify-center mx-auto mb-6 text-salon-gold">
+              <History size={32} />
+            </div>
+            <h3 className="text-2xl font-serif font-bold text-salon-espresso mb-2">No History Yet</h3>
+            <p className="text-salon-gold mb-8">You haven't experienced the GlowHaat ritual yet. Ready for your first transformation?</p>
+            <StylizedButton onClick={() => navigate('/customer/book')}>Book a Session</StylizedButton>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

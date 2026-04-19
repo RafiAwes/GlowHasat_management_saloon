@@ -32,7 +32,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Zenith Salon Engine running on http://localhost:${PORT}`);
+    console.log(`GlowHaat Salon Engine running on http://localhost:${PORT}`);
   });
 }
 

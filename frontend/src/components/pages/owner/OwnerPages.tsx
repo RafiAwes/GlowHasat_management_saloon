@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { DashboardLayout } from '@/src/components/layouts/DashboardLayout';
 import { StatCard, GlassContainer, StylizedButton } from '@/src/components/ui/Shared';
-import { useSalon, Staff, InventoryItem } from '@/src/context/SalonContext';
+import { useSalon, Staff, InventoryItem, Discount } from '@/src/context/SalonContext';
 import { cn } from '@/src/lib/utils';
 import { OWNER_NAV } from '@/src/constants';
 
@@ -44,6 +44,7 @@ import {
   LineChart,
   Line
 } from 'recharts';
+import { Trash2 } from 'lucide-react';
 
 const ownerNav = [
   { label: 'Dashboard', href: '/owner/dashboard', icon: <LayoutDashboard size={20} /> },
@@ -214,7 +215,7 @@ export const OwnerDashboard = () => {
           <div className="space-y-6">
             {[
               { type: 'Booking', msg: 'New Balayage appointment for Sarah J.', time: '10 mins ago', icon: <Calendar size={16} /> },
-              { type: 'Inventory', msg: 'Low stock alert: Zenith Silk Shampoo', time: '1 hour ago', icon: <Package size={16} /> },
+              { type: 'Inventory', msg: 'Low stock alert: GlowHaat Silk Shampoo', time: '1 hour ago', icon: <Package size={16} /> },
               { type: 'Staff', msg: 'Alex Rivers completed 5th service today', time: '2 hours ago', icon: <TrendingUp size={16} /> },
               { type: 'Review', msg: 'New 5-star review from Michael R.', time: '4 hours ago', icon: <Sparkles size={16} /> },
             ].map((activity, i) => (
@@ -292,9 +293,16 @@ export const OwnerAnalytics = () => {
 };
 
 export const OwnerStaff = () => {
-  const { staff, addStaff } = useSalon();
+  const { staff, addStaff, deleteStaff } = useSalon();
   const [view, setView] = useState<'list' | 'details' | 'add'>('list');
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
+
+  const handleDeleteStaff = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (window.confirm("Are you sure you want to remove this staff member? This will also disable their system access.")) {
+      deleteStaff(id);
+    }
+  };
 
   const handleAddStaff = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -450,7 +458,16 @@ export const OwnerStaff = () => {
           >
             <div className="flex justify-between items-start mb-6">
               <img src={member.avatar} className="w-20 h-20 rounded-2xl object-cover shadow-lg group-hover:scale-105 transition-transform" referrerPolicy="no-referrer" />
-              <button className="p-2 text-salon-gold hover:bg-salon-cream rounded-full"><MoreHorizontal size={20} /></button>
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                  onClick={(e) => handleDeleteStaff(e, member.id)}
+                  className="p-2 text-red-400 hover:bg-red-50 rounded-full transition-colors"
+                  title="Remove Staff"
+                >
+                  <Trash2 size={20} />
+                </button>
+                <button className="p-2 text-salon-gold hover:bg-salon-cream rounded-full"><MoreHorizontal size={20} /></button>
+              </div>
             </div>
             <h4 className="text-lg font-serif font-bold text-salon-espresso">{member.name}</h4>
             <p className="text-sm text-salon-gold mb-4">{member.role}</p>
@@ -613,5 +630,93 @@ export const OwnerInventory = () => {
       </div>
     </GlassContainer>
   </DashboardLayout>
+  );
+};
+
+export const OwnerPromotions = () => {
+  const { discounts, addDiscount } = useSalon();
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAddDiscount = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    addDiscount({
+      salonId: 'sal1', // Default for owner portal
+      title: formData.get('title') as string,
+      description: formData.get('description') as string,
+      percentage: parseInt(formData.get('percentage') as string),
+      code: formData.get('code') as string,
+      expiryDate: formData.get('expiryDate') as string,
+    });
+    setIsAdding(false);
+  };
+
+  return (
+    <DashboardLayout navItems={OWNER_NAV} title="Promotion Management" userRole="Owner">
+      <div className="flex justify-between items-center mb-8">
+        <h3 className="text-2xl font-serif font-bold text-salon-espresso">Active Offers</h3>
+        <StylizedButton variant="primary" onClick={() => setIsAdding(true)}>
+          <Plus size={18} className="mr-2" />
+          Create Discount
+        </StylizedButton>
+      </div>
+
+      {isAdding && (
+        <GlassContainer className="p-8 mb-8 animate-in slide-in-from-top-4 duration-300">
+          <form onSubmit={handleAddDiscount} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase font-bold text-salon-gold tracking-widest">Offer Title</label>
+              <input name="title" required className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20" placeholder="e.g. Summer Glow Special" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase font-bold text-salon-gold tracking-widest">Promo Code</label>
+              <input name="code" required className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20" placeholder="e.g. SUMMER24" />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-[10px] uppercase font-bold text-salon-gold tracking-widest">Description</label>
+              <textarea name="description" required className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20 h-24 resize-none" placeholder="Describe the offer..." />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase font-bold text-salon-gold tracking-widest">Discount %</label>
+              <input name="percentage" type="number" required min="1" max="100" className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20" placeholder="e.g. 20" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase font-bold text-salon-gold tracking-widest">Expiry Date</label>
+              <input name="expiryDate" type="date" required className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20" />
+            </div>
+            <div className="md:col-span-2 flex justify-end gap-3 mt-4">
+              <StylizedButton variant="ghost" type="button" onClick={() => setIsAdding(false)}>Cancel</StylizedButton>
+              <StylizedButton variant="primary" type="submit">Publish Offer</StylizedButton>
+            </div>
+          </form>
+        </GlassContainer>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {discounts.map(d => (
+          <GlassContainer key={d.id} className="p-6 relative group overflow-hidden">
+            <div className="absolute top-0 right-0 p-3 bg-salon-espresso text-white text-[10px] font-bold rounded-bl-xl">
+              {d.percentage}% OFF
+            </div>
+            <div className="w-10 h-10 bg-salon-gold/10 rounded-xl flex items-center justify-center text-salon-bronze mb-4">
+              <Sparkles size={24} />
+            </div>
+            <h4 className="text-xl font-serif font-bold text-salon-espresso mb-2">{d.title}</h4>
+            <p className="text-sm text-salon-gold mb-6 line-clamp-2">{d.description}</p>
+            <div className="flex items-center justify-between pt-6 border-t border-salon-ivory/50">
+              <div className="px-3 py-1 bg-salon-cream rounded border border-salon-gold/20 font-mono text-xs font-bold text-salon-bronze">
+                {d.code}
+              </div>
+              <p className="text-[10px] uppercase font-bold text-salon-gold">Expires: {d.expiryDate}</p>
+            </div>
+          </GlassContainer>
+        ))}
+        {discounts.length === 0 && !isAdding && (
+          <div className="md:col-span-3 py-20 text-center text-salon-gold italic border-2 border-dashed border-salon-ivory rounded-[2rem]">
+            No proactive promotions currently active.
+          </div>
+        )}
+      </div>
+    </DashboardLayout>
   );
 };

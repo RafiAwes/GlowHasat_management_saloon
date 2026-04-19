@@ -52,7 +52,7 @@ export const DashboardLayout = ({ children, navItems, title, userRole }: Dashboa
               <Sparkles size={24} />
             </div>
             <div>
-              <h1 className="text-xl font-serif font-bold tracking-tight text-salon-espresso leading-none">ZENITH</h1>
+              <h1 className="text-xl font-serif font-bold tracking-tight text-salon-espresso leading-none">GLOWHAAT</h1>
               <p className="text-[10px] uppercase tracking-[0.2em] text-salon-gold font-bold">Salon Engine</p>
             </div>
           </div>

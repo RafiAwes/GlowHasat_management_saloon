@@ -123,6 +123,7 @@ export const AdminSalons = () => {
     email: '',
     phone: '',
     description: '',
+    openingHours: '',
     status: 'Onboarding' as Salon['status']
   });
 
@@ -130,7 +131,7 @@ export const AdminSalons = () => {
     e.preventDefault();
     addSalon(formData);
     setView('list');
-    setFormData({ name: '', location: '', ownerName: '', email: '', phone: '', description: '', status: 'Onboarding' });
+    setFormData({ name: '', location: '', ownerName: '', email: '', phone: '', description: '', openingHours: '', status: 'Onboarding' });
   };
 
   if (view === 'register') {
@@ -144,7 +145,7 @@ export const AdminSalons = () => {
 
           <GlassContainer className="p-6 sm:p-10">
             <h3 className="text-2xl sm:text-3xl font-serif font-bold text-salon-espresso mb-2">Salon Onboarding</h3>
-            <p className="text-sm text-salon-gold mb-10">Initialize a new luxury destination in the Zenith network.</p>
+            <p className="text-sm text-salon-gold mb-10">Initialize a new luxury destination in the GlowHaat network.</p>
 
             <form onSubmit={handleRegister} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -155,7 +156,7 @@ export const AdminSalons = () => {
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
                     className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 focus:ring-2 focus:ring-salon-gold/20 outline-none text-sm"
-                    placeholder="e.g. Zenith Paris"
+                    placeholder="e.g. GlowHaat Paris"
                   />
                 </div>
                 <div className="space-y-2">
@@ -200,6 +201,17 @@ export const AdminSalons = () => {
                     className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 focus:ring-2 focus:ring-salon-gold/20 outline-none text-sm"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Opening Hours</label>
+                <input 
+                  required
+                  value={formData.openingHours}
+                  onChange={e => setFormData({...formData, openingHours: e.target.value})}
+                  className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 focus:ring-2 focus:ring-salon-gold/20 outline-none text-sm"
+                  placeholder="e.g. Mon-Fri: 9 AM - 6 PM"
+                />
               </div>
 
               <div className="space-y-2">
@@ -352,7 +364,7 @@ export const AdminSalons = () => {
 
               <GlassContainer className="p-6 sm:p-8 border-red-100">
                 <h4 className="text-lg font-serif font-bold text-red-800 mb-4">Danger Zone</h4>
-                <p className="text-xs text-red-600 mb-6">Suspend or remove this salon from the Zenith network.</p>
+                <p className="text-xs text-red-600 mb-6">Suspend or remove this salon from the GlowHaat network.</p>
                 <StylizedButton variant="outline" className="w-full text-red-600 border-red-200 hover:bg-red-50">Suspend Salon</StylizedButton>
               </GlassContainer>
             </div>
