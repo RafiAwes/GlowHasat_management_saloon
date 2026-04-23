@@ -19,7 +19,8 @@ import {
   Plus,
   ShoppingBag,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Upload
 } from 'lucide-react';
 import { DashboardLayout } from '@/src/components/layouts/DashboardLayout';
 import { StatCard, GlassContainer, StylizedButton } from '@/src/components/ui/Shared';
@@ -296,11 +297,19 @@ export const OwnerStaff = () => {
   const { staff, addStaff, deleteStaff } = useSalon();
   const [view, setView] = useState<'list' | 'details' | 'add'>('list');
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   const handleDeleteStaff = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (window.confirm("Are you sure you want to remove this staff member? This will also disable their system access.")) {
       deleteStaff(id);
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarPreview(URL.createObjectURL(file));
     }
   };
 
@@ -310,15 +319,16 @@ export const OwnerStaff = () => {
     addStaff({
       name: formData.get('name') as string,
       role: formData.get('role') as string,
-      avatar: `https://picsum.photos/seed/${Math.random()}/200/200`
+      avatar: avatarPreview || `https://picsum.photos/seed/${Math.random()}/200/200`
     });
+    setAvatarPreview(null);
     setView('list');
   };
 
   if (view === 'add') {
     return (
       <DashboardLayout navItems={OWNER_NAV} title="Hire New Artisan" userRole="Owner">
-        <button onClick={() => setView('list')} className="flex items-center gap-2 text-salon-gold hover:text-salon-bronze mb-8 transition-colors">
+        <button onClick={() => { setView('list'); setAvatarPreview(null); }} className="flex items-center gap-2 text-salon-gold hover:text-salon-bronze mb-8 transition-colors">
           <ArrowLeft size={20} />
           <span className="font-bold uppercase tracking-widest text-xs">Back to Artisans</span>
         </button>
@@ -340,6 +350,30 @@ export const OwnerStaff = () => {
                     <option>Color Specialist</option>
                     <option>Artisan Director</option>
                   </select>
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Upload Profile Picture</label>
+                  <div className="space-y-4 flex flex-col items-center justify-center p-6 border-2 border-dashed border-salon-ivory/80 rounded-2xl bg-salon-cream/10 relative overflow-hidden group">
+                    {avatarPreview ? (
+                      <img src={avatarPreview} alt="Preview" className="w-24 h-24 rounded-full object-cover shadow-lg border-4 border-white z-10" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-salon-cream flex items-center justify-center text-salon-gold z-10">
+                        <Upload size={24} />
+                      </div>
+                    )}
+                    <div className="text-center z-10">
+                      <p className="text-sm font-bold text-salon-espresso">{avatarPreview ? 'Change Profile Image' : 'Upload Profile Image'}</p>
+                      <p className="text-[10px] text-salon-gold mt-1">Recommended size: 200x200px</p>
+                    </div>
+                    <input 
+                      name="avatar" 
+                      type="file" 
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" 
+                    />
+                    <div className="absolute inset-0 bg-salon-gold/5 opacity-0 group-hover:opacity-100 transition-opacity z-0 pointer-events-none" />
+                  </div>
                 </div>
               </div>
               <div className="space-y-2">
