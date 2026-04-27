@@ -13,6 +13,8 @@ import {
   Award,
   Sparkles,
   Trash2,
+  CreditCard,
+  Crown,
 } from 'lucide-react';
 
 export const APP_TAGLINE = 'Luxury salon operations, unified in one intelligent dashboard.';
@@ -41,4 +43,6 @@ export const CUSTOMER_NAV = [
   { label: 'Book Now', href: '/customer/book', icon: <Calendar size={20} /> },
   { label: 'My History', href: '/customer/history', icon: <History size={20} /> },
   { label: 'Loyalty', href: '/customer/loyalty', icon: <Award size={20} /> },
+  { label: 'Payments', href: '/customer/payments', icon: <CreditCard size={20} /> },
+  { label: 'Subscription', href: '/customer/subscription', icon: <Crown size={20} /> },
 ];

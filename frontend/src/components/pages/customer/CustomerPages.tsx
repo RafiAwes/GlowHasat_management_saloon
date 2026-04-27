@@ -9,7 +9,9 @@ import {
   MapPin, 
   ChevronRight,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  CreditCard,
+  Crown
 } from 'lucide-react';
 import { DashboardLayout } from '@/src/components/layouts/DashboardLayout';
 import { GlassContainer, StylizedButton } from '@/src/components/ui/Shared';
@@ -140,7 +142,7 @@ export const CustomerBook = () => {
     service: '',
     stylistId: '',
     stylistName: '',
-    date: '2026-04-16',
+    date: new Date().toISOString().split('T')[0],
     time: '',
     price: 0
   });
@@ -215,6 +217,29 @@ export const CustomerBook = () => {
 
         {step === 2 && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {(() => {
+              const selectedServiceObj = services.find(s => s.name === bookingData.service);
+              if (selectedServiceObj) {
+                return (
+                  <GlassContainer className="p-6 bg-salon-cream/30 border-salon-gold/30 mb-8 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-salon-gold/10 rounded-full blur-[40px] -mr-10 -mt-10"></div>
+                    <div className="relative z-10 flex justify-between items-start">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest font-bold text-salon-gold mb-1">Selected Service</p>
+                        <h4 className="text-xl font-serif font-bold text-salon-espresso">{selectedServiceObj.name}</h4>
+                        <p className="text-sm text-salon-gold mt-1 max-w-sm">{selectedServiceObj.desc}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xl font-serif font-bold text-salon-espresso">${selectedServiceObj.price}</p>
+                        <p className="text-[10px] uppercase tracking-widest font-bold text-salon-bronze mt-1">{selectedServiceObj.duration}</p>
+                      </div>
+                    </div>
+                  </GlassContainer>
+                );
+              }
+              return null;
+            })()}
+
             <h3 className="text-2xl font-serif font-bold text-salon-espresso">Choose your Artisan</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {staff.map((s) => (
@@ -244,52 +269,115 @@ export const CustomerBook = () => {
 
         {step === 3 && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h3 className="text-2xl font-serif font-bold text-salon-espresso">Select Time & Confirm</h3>
-            <div className="grid grid-cols-3 gap-3">
-              {['09:00 AM', '10:30 AM', '12:00 PM', '02:30 PM', '04:00 PM', '05:30 PM'].map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setBookingData({ ...bookingData, time: t })}
-                  className={cn(
-                    "p-4 rounded-xl font-bold text-sm transition-all",
-                    bookingData.time === t ? "bg-salon-espresso text-white shadow-lg" : "bg-white/50 text-salon-gold hover:bg-salon-cream"
-                  )}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
+            <h3 className="text-2xl font-serif font-bold text-salon-espresso">Select Date & Time</h3>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              
+              <div className="space-y-8">
+                <GlassContainer className="p-6 bg-salon-cream/30 border-salon-ivory shadow-inner">
+                  <div className="flex justify-between items-center mb-6">
+                    <h4 className="font-bold text-salon-espresso">April 2026</h4>
+                    <div className="flex gap-2 text-salon-gold">
+                      <button className="p-1 hover:bg-salon-cream rounded transition-colors">&lt;</button>
+                      <button className="p-1 hover:bg-salon-cream rounded transition-colors">&gt;</button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                      <div key={day} className="text-[10px] uppercase font-bold text-salon-gold/70 py-1">{day}</div>
+                    ))}
+                  </div>
+                  
+                  <div className="grid grid-cols-7 gap-1 text-center">
+                    <div className="py-2 text-sm text-salon-gold/30">29</div>
+                    <div className="py-2 text-sm text-salon-gold/30">30</div>
+                    <div className="py-2 text-sm text-salon-gold/30">31</div>
+                    
+                    {Array.from({length: 30}).map((_, i) => {
+                      const day = i + 1;
+                      const dateStr = `2026-04-${day.toString().padStart(2, '0')}`;
+                      const isSelected = bookingData.date === dateStr;
+                      
+                      return (
+                        <button
+                          key={day}
+                          onClick={() => setBookingData({ ...bookingData, date: dateStr })}
+                          className={cn(
+                            "py-2 text-sm rounded-lg font-medium transition-all",
+                            isSelected 
+                              ? "bg-salon-espresso text-white shadow-md" 
+                              : "text-salon-espresso hover:bg-salon-cream/50"
+                          )}
+                        >
+                          {day}
+                        </button>
+                      );
+                    })}
+                    
+                    <div className="py-2 text-sm text-salon-gold/30">1</div>
+                    <div className="py-2 text-sm text-salon-gold/30">2</div>
+                  </div>
+                </GlassContainer>
 
-            <GlassContainer className="p-8 bg-salon-cream/30">
-              <h4 className="text-sm uppercase tracking-widest font-bold text-salon-gold mb-6">Booking Summary</h4>
-              <div className="space-y-4 mb-8">
-                <div className="flex justify-between">
-                  <span className="text-salon-gold">Service</span>
-                  <span className="font-bold text-salon-espresso">{bookingData.service}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-salon-gold">Artisan</span>
-                  <span className="font-bold text-salon-espresso">{bookingData.stylistName}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-salon-gold">Date & Time</span>
-                  <span className="font-bold text-salon-espresso">{bookingData.date} at {bookingData.time}</span>
-                </div>
-                <div className="h-[1px] bg-salon-ivory/50"></div>
-                <div className="flex justify-between text-lg">
-                  <span className="font-serif font-bold text-salon-espresso">Total</span>
-                  <span className="font-serif font-bold text-salon-bronze">${bookingData.price}</span>
+                <div className="space-y-4">
+                  <h4 className="text-sm uppercase tracking-widest font-bold text-salon-gold ml-1">Available Times</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    {['09:00 AM', '10:30 AM', '12:00 PM', '02:30 PM', '04:00 PM', '05:30 PM'].map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setBookingData({ ...bookingData, time: t })}
+                        className={cn(
+                          "p-3 rounded-xl font-bold text-sm transition-all border",
+                          bookingData.time === t 
+                            ? "bg-salon-espresso text-white border-salon-espresso shadow-lg" 
+                            : "bg-white/50 text-salon-gold border-salon-ivory hover:border-salon-gold/50"
+                        )}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-              <StylizedButton 
-                disabled={!bookingData.time}
-                onClick={handleComplete}
-                className="w-full py-4"
-              >
-                Confirm Experience
-              </StylizedButton>
-            </GlassContainer>
-            <StylizedButton variant="ghost" onClick={() => setStep(2)} className="w-full">Back to Artisan</StylizedButton>
+
+              <div className="space-y-6">
+                <GlassContainer className="p-8 bg-salon-cream/30 border-salon-gold/20 h-full flex flex-col">
+                  <h4 className="text-sm uppercase tracking-widest font-bold text-salon-gold mb-6">Booking Summary</h4>
+                  <div className="space-y-4 mb-auto">
+                    <div className="flex justify-between items-center">
+                      <span className="text-salon-gold text-sm">Service</span>
+                      <span className="font-bold text-salon-espresso text-right max-w-[180px] truncate">{bookingData.service}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-salon-gold text-sm">Artisan</span>
+                      <span className="font-bold text-salon-espresso">{bookingData.stylistName}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-salon-gold text-sm">Date & Time</span>
+                      <span className="font-bold text-salon-espresso text-right">{bookingData.date} <br/><span className="text-salon-bronze">{bookingData.time ? `${bookingData.time}` : 'Time not selected'}</span></span>
+                    </div>
+                    <div className="h-[1px] bg-salon-ivory/50 my-4"></div>
+                    <div className="flex justify-between items-center text-lg">
+                      <span className="font-serif font-bold text-salon-espresso">Total</span>
+                      <span className="font-serif font-bold text-salon-bronze">${bookingData.price}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-8 space-y-4">
+                    <StylizedButton 
+                      disabled={!bookingData.time || !bookingData.date}
+                      onClick={handleComplete}
+                      className="w-full py-4"
+                    >
+                      Confirm Experience
+                    </StylizedButton>
+                    <StylizedButton variant="ghost" onClick={() => setStep(2)} className="w-full text-xs">Back to Artisan</StylizedButton>
+                  </div>
+                </GlassContainer>
+              </div>
+
+            </div>
           </div>
         )}
 
@@ -407,6 +495,134 @@ export const CustomerLoyalty = () => {
             </GlassContainer>
           ))}
         </div>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export const CustomerPayments = () => {
+  const { bookings, updateBookingStatus } = useSalon();
+  const pendingBookings = bookings.filter(b => b.status === 'pending');
+
+  return (
+    <DashboardLayout navItems={CUSTOMER_NAV} title="Payments" userRole="Client">
+      <div className="max-w-3xl mx-auto space-y-6">
+        <h3 className="text-2xl font-serif font-bold text-salon-espresso mb-6">Pending Payments</h3>
+        {pendingBookings.length > 0 ? pendingBookings.map(b => (
+          <GlassContainer key={b.id} className="p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex gap-4 items-center">
+              <div className="w-12 h-12 bg-salon-cream rounded-xl flex items-center justify-center text-salon-gold flex-shrink-0">
+                <CreditCard size={24} />
+              </div>
+              <div>
+                <h4 className="font-bold text-salon-espresso">{b.service}</h4>
+                <p className="text-sm text-salon-gold">with {b.stylistName}</p>
+                <p className="text-[10px] uppercase tracking-widest font-bold text-salon-bronze mt-1">{b.date} • {b.time}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
+              <p className="text-xl font-serif font-bold text-salon-espresso">${b.price}</p>
+              <StylizedButton onClick={() => updateBookingStatus(b.id, 'confirmed')} size="sm">
+                Pay Now
+              </StylizedButton>
+            </div>
+          </GlassContainer>
+        )) : (
+          <div className="text-center py-16 bg-salon-cream/20 rounded-2xl border border-dashed border-salon-ivory">
+            <div className="w-16 h-16 bg-salon-cream rounded-full flex items-center justify-center mx-auto mb-4 text-salon-gold">
+              <CheckCircle2 size={32} />
+            </div>
+            <h3 className="text-xl font-serif font-bold text-salon-espresso mb-2">All Caught Up</h3>
+            <p className="text-salon-gold text-sm">You have no pending payments at the moment.</p>
+          </div>
+        )}
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export const CustomerSubscription = () => {
+  const [activeTier, setActiveTier] = useState<string | null>(null);
+
+  const tiers = [
+    {
+      id: 'basic',
+      name: 'Essential',
+      price: 49,
+      interval: 'month',
+      desc: 'Perfect for regular maintenance.',
+      features: ['1 Signature Cut per month', '10% off retail products', 'Priority booking']
+    },
+    {
+      id: 'premium',
+      name: 'Premium',
+      price: 129,
+      interval: 'month',
+      desc: 'The complete GlowHaat experience.',
+      features: ['2 Signature Cuts per month', '1 Color Treatment', '20% off retail products', 'VIP lounge access'],
+      isPopular: true
+    },
+    {
+      id: 'elite',
+      name: 'Elite',
+      price: 299,
+      interval: 'month',
+      desc: 'Unlimited luxury and care.',
+      features: ['Unlimited Cuts & Styling', 'Unlimited Color Treatments', '30% off retail products', 'Complimentary refreshments']
+    }
+  ];
+
+  return (
+    <DashboardLayout navItems={CUSTOMER_NAV} title="Subscription Plans" userRole="Client">
+      <div className="text-center mb-12">
+        <h2 className="text-3xl font-serif font-bold text-salon-espresso mb-4">Elevate Your Ritual</h2>
+        <p className="text-salon-gold max-w-xl mx-auto">Choose a membership tier that fits your lifestyle. Enjoy consistent luxury, exclusive perks, and priority access.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        {tiers.map((tier) => (
+          <GlassContainer 
+            key={tier.id} 
+            className={cn(
+              "p-8 flex flex-col relative overflow-hidden transition-all duration-300",
+              tier.isPopular ? "border-salon-gold shadow-lg transform md:-translate-y-4" : "border-salon-ivory",
+              activeTier === tier.id ? "ring-2 ring-salon-espresso" : ""
+            )}
+          >
+            {tier.isPopular && (
+              <div className="absolute top-4 right-4">
+                <span className="bg-salon-gold text-salon-espresso text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">Most Popular</span>
+              </div>
+            )}
+            
+            <div className="mb-8">
+              <h3 className="text-2xl font-serif font-bold text-salon-espresso mb-2">{tier.name}</h3>
+              <p className="text-sm text-salon-gold min-h-[40px]">{tier.desc}</p>
+            </div>
+            
+            <div className="mb-8">
+              <span className="text-4xl font-serif font-bold text-salon-espresso">${tier.price}</span>
+              <span className="text-salon-gold text-sm">/{tier.interval}</span>
+            </div>
+
+            <ul className="space-y-4 mb-8 flex-grow">
+              {tier.features.map((feature, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <CheckCircle2 size={18} className="text-salon-bronze flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-salon-espresso/80">{feature}</span>
+                </li>
+              ))}
+            </ul>
+
+            <StylizedButton 
+              variant={tier.isPopular ? 'primary' : 'outline'} 
+              className="w-full mt-auto"
+              onClick={() => setActiveTier(tier.id)}
+            >
+              {activeTier === tier.id ? 'Current Plan' : 'Subscribe'}
+            </StylizedButton>
+          </GlassContainer>
+        ))}
       </div>
     </DashboardLayout>
   );

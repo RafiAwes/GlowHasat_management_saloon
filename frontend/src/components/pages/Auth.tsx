@@ -18,7 +18,7 @@ export const LoginPage = () => {
     const routes: Record<UserRole, string> = {
       owner: '/owner/dashboard',
       employee: '/employee/schedule',
-      customer: '/customer/book',
+      customer: '/customer/home',
       admin: '/admin/dashboard',
     };
     

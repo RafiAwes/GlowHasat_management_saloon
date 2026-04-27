@@ -22,7 +22,9 @@ import {
   CustomerHome,
   CustomerBook, 
   CustomerHistory, 
-  CustomerLoyalty 
+  CustomerLoyalty,
+  CustomerPayments,
+  CustomerSubscription
 } from './components/pages/customer/CustomerPages';
 
 // Admin Pages
@@ -58,6 +60,8 @@ export default function App() {
           <Route path="/customer/book" element={<CustomerBook />} />
           <Route path="/customer/history" element={<CustomerHistory />} />
           <Route path="/customer/loyalty" element={<CustomerLoyalty />} />
+          <Route path="/customer/payments" element={<CustomerPayments />} />
+          <Route path="/customer/subscription" element={<CustomerSubscription />} />
 
           {/* Admin Panel */}
           <Route path="/admin/dashboard" element={<AdminDashboard />} />

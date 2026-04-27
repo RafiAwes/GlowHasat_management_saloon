@@ -42,7 +42,7 @@ export const DashboardLayout = ({ children, navItems, title, userRole }: Dashboa
     <div className="min-h-screen bg-salon-bg flex">
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-white/60 backdrop-blur-xl border-r border-salon-ivory/50 transform transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-0",
+        "fixed inset-y-0 left-0 z-50 w-64 bg-white/60 backdrop-blur-xl border-r border-salon-ivory/50 transform transition-transform duration-300 lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="h-full flex flex-col p-6">
