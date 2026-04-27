@@ -67,6 +67,8 @@ export interface Staff {
   rating: number;
   revenue: number;
   avatar: string;
+  workingHours?: string;
+  daysOff?: string[];
 }
 
 export interface InventoryItem {
@@ -110,9 +112,9 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   ]);
 
   const [staff, setStaff] = useState<Staff[]>([
-    { id: 's1', name: 'Alex Rivers', role: 'Senior Stylist', rating: 4.9, revenue: 4200, avatar: 'https://picsum.photos/seed/s1/100/100' },
-    { id: 's2', name: 'Jordan Lee', role: 'Master Barber', rating: 4.8, revenue: 3800, avatar: 'https://picsum.photos/seed/s2/100/100' },
-    { id: 's3', name: 'Casey Smith', role: 'Color Specialist', rating: 4.7, revenue: 5100, avatar: 'https://picsum.photos/seed/s3/100/100' },
+    { id: 's1', name: 'Alex Rivers', role: 'Senior Stylist', rating: 4.9, revenue: 4200, avatar: 'https://picsum.photos/seed/s1/100/100', workingHours: '09:00 AM - 06:00 PM', daysOff: ['Sunday', 'Monday'] },
+    { id: 's2', name: 'Jordan Lee', role: 'Master Barber', rating: 4.8, revenue: 3800, avatar: 'https://picsum.photos/seed/s2/100/100', workingHours: '10:00 AM - 07:00 PM', daysOff: ['Tuesday'] },
+    { id: 's3', name: 'Casey Smith', role: 'Color Specialist', rating: 4.7, revenue: 5100, avatar: 'https://picsum.photos/seed/s3/100/100', workingHours: '08:00 AM - 04:00 PM', daysOff: ['Sunday'] },
   ]);
 
   const [inventory, setInventory] = useState<InventoryItem[]>([
@@ -255,7 +257,9 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       ...staffData,
       id: `s${staff.length + 1}`,
       rating: 5.0,
-      revenue: 0
+      revenue: 0,
+      workingHours: '09:00 AM - 05:00 PM',
+      daysOff: ['Sunday']
     };
     setStaff(prev => [...prev, newStaff]);
 

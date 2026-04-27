@@ -294,7 +294,7 @@ export const OwnerAnalytics = () => {
 };
 
 export const OwnerStaff = () => {
-  const { staff, addStaff, deleteStaff } = useSalon();
+  const { staff, addStaff, deleteStaff, bookings } = useSalon();
   const [view, setView] = useState<'list' | 'details' | 'add'>('list');
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -389,6 +389,9 @@ export const OwnerStaff = () => {
   }
 
   if (view === 'details' && selectedStaff) {
+    const staffBookings = bookings.filter(b => b.stylistId === selectedStaff.id);
+    const upcomingBookings = staffBookings.filter(b => b.status === 'pending' || b.status === 'confirmed');
+    const pastBookings = staffBookings.filter(b => b.status === 'completed' || b.status === 'cancelled');
     return (
       <DashboardLayout navItems={OWNER_NAV} title="Artisan Profile" userRole="Owner">
         <button onClick={() => setView('list')} className="flex items-center gap-2 text-salon-gold hover:text-salon-bronze mb-8 transition-colors">
@@ -414,6 +417,34 @@ export const OwnerStaff = () => {
                 <p className="text-[10px] uppercase font-bold text-salon-gold">Revenue</p>
               </div>
             </div>
+
+            <div className="w-full pt-6 mt-6 border-t border-salon-ivory/50 text-left">
+              <h4 className="text-sm font-serif font-bold text-salon-espresso mb-4">Routine & Availability</h4>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Clock size={16} className="text-salon-gold flex-shrink-0" />
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-salon-gold font-bold">Working Hours</p>
+                    <p className="text-sm text-salon-espresso font-medium">{selectedStaff.workingHours || 'Not Set'}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 mt-4">
+                  <Calendar size={16} className="text-salon-gold flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-salon-gold font-bold">Days Off</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {selectedStaff.daysOff && selectedStaff.daysOff.length > 0 ? (
+                        selectedStaff.daysOff.map(day => (
+                          <span key={day} className="px-2 py-0.5 bg-red-50 text-red-600 rounded text-[10px] font-bold">{day}</span>
+                        ))
+                      ) : (
+                        <span className="text-sm text-salon-espresso">None</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </GlassContainer>
 
           <div className="lg:col-span-2 space-y-8">
@@ -433,35 +464,73 @@ export const OwnerStaff = () => {
             </GlassContainer>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <GlassContainer className="p-6">
-                <h4 className="text-sm font-serif font-bold text-salon-espresso mb-4">Upcoming Schedule</h4>
+              <GlassContainer className="p-6 h-80 overflow-y-auto">
+                <h4 className="text-sm font-serif font-bold text-salon-espresso mb-4 flex justify-between items-center">
+                  Upcoming Schedule
+                  <span className="px-2 py-1 bg-salon-cream/50 rounded-full text-[10px] text-salon-gold">{upcomingBookings.length}</span>
+                </h4>
                 <div className="space-y-4">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="flex items-center gap-3 p-3 bg-salon-cream/20 rounded-xl">
-                      <div className="w-10 h-10 rounded-lg bg-salon-espresso text-white flex flex-col items-center justify-center">
-                        <span className="text-[8px] font-bold">APR</span>
-                        <span className="text-xs font-bold">1{i}</span>
+                  {upcomingBookings.length > 0 ? upcomingBookings.map(b => {
+                    const dateObj = new Date(b.date);
+                    const month = dateObj.toLocaleString('default', { month: 'short' }).toUpperCase();
+                    const day = dateObj.getDate();
+                    return (
+                    <div key={b.id} className="flex items-center gap-3 p-3 bg-salon-cream/20 rounded-xl">
+                      <div className="w-10 h-10 rounded-lg bg-salon-espresso text-white flex flex-col items-center justify-center flex-shrink-0">
+                        <span className="text-[8px] font-bold">{month}</span>
+                        <span className="text-xs font-bold">{day}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-salon-espresso truncate">{b.service}</p>
+                        <p className="text-[10px] text-salon-gold truncate">{b.time} • Client: {b.clientName}</p>
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-salon-espresso">Executive Cut</p>
-                        <p className="text-[10px] text-salon-gold">10:30 AM • Client: Sarah</p>
+                        <span className={cn(
+                          "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase",
+                          b.status === 'confirmed' ? "bg-green-100 text-green-600" : "bg-yellow-100 text-yellow-600"
+                        )}>
+                          {b.status}
+                        </span>
                       </div>
                     </div>
-                  ))}
+                  )}) : (
+                    <p className="text-xs text-salon-gold italic">No upcoming appointments.</p>
+                  )}
                 </div>
               </GlassContainer>
-              <GlassContainer className="p-6">
-                <h4 className="text-sm font-serif font-bold text-salon-espresso mb-4">Recent Reviews</h4>
+
+              <GlassContainer className="p-6 h-80 overflow-y-auto">
+                <h4 className="text-sm font-serif font-bold text-salon-espresso mb-4 flex justify-between items-center">
+                  Past Bookings
+                  <span className="px-2 py-1 bg-salon-cream/50 rounded-full text-[10px] text-salon-gold">{pastBookings.length}</span>
+                </h4>
                 <div className="space-y-4">
-                  {[1, 2].map(i => (
-                    <div key={i} className="space-y-1">
-                      <div className="flex text-salon-gold">
-                        {[1, 2, 3, 4, 5].map(s => <Star key={s} size={10} fill="currentColor" />)}
+                  {pastBookings.length > 0 ? pastBookings.map(b => {
+                    const dateObj = new Date(b.date);
+                    const month = dateObj.toLocaleString('default', { month: 'short' }).toUpperCase();
+                    const day = dateObj.getDate();
+                    return (
+                    <div key={b.id} className="flex items-center gap-3 p-3 bg-salon-cream/20 rounded-xl opacity-80">
+                      <div className="w-10 h-10 rounded-lg bg-salon-cream text-salon-espresso flex flex-col items-center justify-center flex-shrink-0">
+                        <span className="text-[8px] font-bold">{month}</span>
+                        <span className="text-xs font-bold">{day}</span>
                       </div>
-                      <p className="text-[11px] text-salon-espresso italic">"Alex is a true master of color. My balayage has never looked better!"</p>
-                      <p className="text-[9px] text-salon-gold font-bold">— Michael R.</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-salon-espresso truncate">{b.service}</p>
+                        <p className="text-[10px] text-salon-gold truncate">{b.time} • Client: {b.clientName}</p>
+                      </div>
+                      <div>
+                        <span className={cn(
+                          "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase",
+                          b.status === 'completed' ? "bg-blue-100 text-blue-600" : "bg-red-100 text-red-600"
+                        )}>
+                          {b.status}
+                        </span>
+                      </div>
                     </div>
-                  ))}
+                  )}) : (
+                    <p className="text-xs text-salon-gold italic">No past bookings.</p>
+                  )}
                 </div>
               </GlassContainer>
             </div>
