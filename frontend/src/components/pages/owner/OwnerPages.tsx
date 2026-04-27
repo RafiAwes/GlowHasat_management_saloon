@@ -20,7 +20,8 @@ import {
   ShoppingBag,
   CheckCircle2,
   AlertCircle,
-  Upload
+  Upload,
+  ChevronRight
 } from 'lucide-react';
 import { DashboardLayout } from '@/src/components/layouts/DashboardLayout';
 import { StatCard, GlassContainer, StylizedButton } from '@/src/components/ui/Shared';
@@ -820,6 +821,411 @@ export const OwnerPromotions = () => {
           </div>
         )}
       </div>
+    </DashboardLayout>
+  );
+};
+
+export const OwnerBookings = () => {
+  const { bookings, addBooking, staff } = useSalon();
+  const [view, setView] = useState<'list' | 'add'>('list');
+  const [step, setStep] = useState(1);
+  const [bookingData, setBookingData] = useState({
+    clientName: '',
+    clientPhone: '',
+    clientAddress: '',
+    service: '',
+    stylistId: '',
+    stylistName: '',
+    date: new Date().toISOString().split('T')[0],
+    time: '',
+    price: 0
+  });
+
+  const services = [
+    { id: 's1', name: 'Signature Cut', price: 85, duration: '60 min', desc: 'Precision cutting tailored to your features.' },
+    { id: 's2', name: 'Balayage Artistry', price: 220, duration: '150 min', desc: 'Hand-painted highlights for a natural glow.' },
+    { id: 's3', name: 'GlowHaat Treatment', price: 65, duration: '45 min', desc: 'Deep conditioning ritual for silk-like hair.' },
+  ];
+
+  const handleComplete = () => {
+    // Convert time if necessary or just use the chosen string '09:00 AM'
+    addBooking({
+      clientId: `c${Date.now()}`,
+      clientName: bookingData.clientName || 'Walk-in Client',
+      service: bookingData.service,
+      stylistId: bookingData.stylistId,
+      stylistName: bookingData.stylistName,
+      date: bookingData.date,
+      time: bookingData.time,
+      status: 'confirmed',
+      price: bookingData.price
+    });
+    setStep(6);
+  };
+
+  const handleResetAdd = () => {
+    setView('list');
+    setStep(1);
+    setBookingData({
+      clientName: '', clientPhone: '', clientAddress: '', service: '',
+      stylistId: '', stylistName: '', date: new Date().toISOString().split('T')[0], time: '', price: 0
+    });
+  };
+
+  if (view === 'add') {
+    return (
+      <DashboardLayout navItems={OWNER_NAV} title="Create Booking" userRole="Owner">
+        <button onClick={handleResetAdd} className="flex items-center gap-2 text-salon-gold hover:text-salon-bronze mb-8 transition-colors">
+          <ArrowLeft size={20} />
+          <span className="font-bold uppercase tracking-widest text-xs">Back to Bookings</span>
+        </button>
+
+        <div className="max-w-3xl mx-auto">
+          {step < 6 && (
+            <div className="flex justify-between mb-12 relative">
+              <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-salon-ivory/50 -translate-y-1/2 z-0"></div>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div 
+                  key={i} 
+                  className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm relative z-10 transition-all duration-500",
+                    step >= i ? "bg-salon-espresso text-white shadow-lg" : "bg-salon-cream text-salon-gold"
+                  )}
+                >
+                  {step > i ? <CheckCircle2 size={20} /> : i}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {step === 1 && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h3 className="text-2xl font-serif font-bold text-salon-espresso">Client Details</h3>
+              <GlassContainer className="p-8">
+                <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Client Name</label>
+                    <input 
+                      required 
+                      value={bookingData.clientName}
+                      onChange={(e) => setBookingData({...bookingData, clientName: e.target.value})}
+                      className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20" 
+                      placeholder="e.g. Emma Stone" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Phone Number</label>
+                    <input 
+                      required 
+                      type="tel"
+                      value={bookingData.clientPhone}
+                      onChange={(e) => setBookingData({...bookingData, clientPhone: e.target.value})}
+                      className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20" 
+                      placeholder="e.g. +1 (555) 019-2834" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Address (Optional)</label>
+                    <textarea 
+                      value={bookingData.clientAddress}
+                      onChange={(e) => setBookingData({...bookingData, clientAddress: e.target.value})}
+                      className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20 h-24 resize-none" 
+                      placeholder="Enter client address..." 
+                    />
+                  </div>
+                  <StylizedButton type="submit" className="w-full py-4 mt-4">Continue to Service</StylizedButton>
+                </form>
+              </GlassContainer>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-serif font-bold text-salon-espresso">Select a Service</h3>
+                <StylizedButton variant="ghost" onClick={() => setStep(1)} className="text-xs py-2 px-4">Edit Client Details</StylizedButton>
+              </div>
+              <div className="grid grid-cols-1 gap-4">
+                {services.map((s) => (
+                  <GlassContainer 
+                    key={s.id} 
+                    onClick={() => {
+                      setBookingData({ ...bookingData, service: s.name, price: s.price });
+                      setStep(3);
+                    }}
+                    className="p-6 flex items-center justify-between cursor-pointer hover:border-salon-gold transition-all group"
+                  >
+                    <div>
+                      <h4 className="text-lg font-serif font-bold text-salon-espresso">{s.name}</h4>
+                      <p className="text-sm text-salon-gold mb-1">{s.desc}</p>
+                      <p className="text-[10px] uppercase tracking-widest font-bold text-salon-bronze">{s.duration}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-serif font-bold text-salon-espresso">${s.price}</p>
+                      <ChevronRight size={20} className="text-salon-gold ml-auto mt-2 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </GlassContainer>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {(() => {
+                const selectedServiceObj = services.find(s => s.name === bookingData.service);
+                if (selectedServiceObj) {
+                  return (
+                    <GlassContainer className="p-6 bg-salon-cream/30 border-salon-gold/30 mb-8 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-salon-gold/10 rounded-full blur-[40px] -mr-10 -mt-10"></div>
+                      <div className="relative z-10 flex justify-between items-start">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-widest font-bold text-salon-gold mb-1">Selected Service</p>
+                          <h4 className="text-xl font-serif font-bold text-salon-espresso">{selectedServiceObj.name}</h4>
+                          <p className="text-sm text-salon-gold mt-1 max-w-sm">{selectedServiceObj.desc}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-serif font-bold text-salon-espresso">${selectedServiceObj.price}</p>
+                          <p className="text-[10px] uppercase tracking-widest font-bold text-salon-bronze mt-1">{selectedServiceObj.duration}</p>
+                        </div>
+                      </div>
+                    </GlassContainer>
+                  );
+                }
+                return null;
+              })()}
+
+              <h3 className="text-2xl font-serif font-bold text-salon-espresso">Choose your Artisan</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {staff.map((s) => (
+                  <GlassContainer 
+                    key={s.id} 
+                    onClick={() => {
+                      setBookingData({ ...bookingData, stylistId: s.id, stylistName: s.name });
+                      setStep(4);
+                    }}
+                    className="p-6 flex items-center gap-4 cursor-pointer hover:border-salon-gold transition-all"
+                  >
+                    <img src={s.avatar} className="w-16 h-16 rounded-xl object-cover" referrerPolicy="no-referrer" />
+                    <div>
+                      <h4 className="text-lg font-serif font-bold text-salon-espresso">{s.name}</h4>
+                      <p className="text-xs text-salon-gold mb-2">{s.role}</p>
+                      <div className="flex items-center gap-1 text-salon-bronze">
+                        <Star size={12} fill="currentColor" />
+                        <span className="text-xs font-bold">{s.rating}</span>
+                      </div>
+                    </div>
+                  </GlassContainer>
+                ))}
+              </div>
+              <StylizedButton variant="ghost" onClick={() => setStep(2)} className="mt-4">Back to Services</StylizedButton>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h3 className="text-2xl font-serif font-bold text-salon-espresso">Select Date & Time</h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="space-y-8">
+                  <GlassContainer className="p-6 bg-salon-cream/30 border-salon-ivory shadow-inner">
+                    <div className="flex justify-between items-center mb-6">
+                      <h4 className="font-bold text-salon-espresso">April 2026</h4>
+                      <div className="flex gap-2 text-salon-gold">
+                        <button className="p-1 hover:bg-salon-cream rounded transition-colors">&lt;</button>
+                        <button className="p-1 hover:bg-salon-cream rounded transition-colors">&gt;</button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                      {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                        <div key={day} className="text-[10px] uppercase font-bold text-salon-gold/70 py-1">{day}</div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-7 gap-1 text-center">
+                      <div className="py-2 text-sm text-salon-gold/30">29</div>
+                      <div className="py-2 text-sm text-salon-gold/30">30</div>
+                      <div className="py-2 text-sm text-salon-gold/30">31</div>
+                      {Array.from({length: 30}).map((_, i) => {
+                        const day = i + 1;
+                        const dateStr = `2026-04-${day.toString().padStart(2, '0')}`;
+                        const isSelected = bookingData.date === dateStr;
+                        return (
+                          <button
+                            key={day}
+                            onClick={() => setBookingData({ ...bookingData, date: dateStr })}
+                            className={cn(
+                              "py-2 text-sm rounded-lg font-medium transition-all",
+                              isSelected 
+                                ? "bg-salon-espresso text-white shadow-md" 
+                                : "text-salon-espresso hover:bg-salon-cream/50"
+                            )}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                      <div className="py-2 text-sm text-salon-gold/30">1</div>
+                      <div className="py-2 text-sm text-salon-gold/30">2</div>
+                    </div>
+                  </GlassContainer>
+
+                  <div className="space-y-4">
+                    <h4 className="text-sm uppercase tracking-widest font-bold text-salon-gold ml-1">Available Times</h4>
+                    <div className="grid grid-cols-3 gap-3">
+                      {['09:00 AM', '10:30 AM', '12:00 PM', '02:30 PM', '04:00 PM', '05:30 PM'].map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => setBookingData({ ...bookingData, time: t })}
+                          className={cn(
+                            "p-3 rounded-xl font-bold text-sm transition-all border",
+                            bookingData.time === t 
+                              ? "bg-salon-espresso text-white border-salon-espresso shadow-lg" 
+                              : "bg-white/50 text-salon-gold border-salon-ivory hover:border-salon-gold/50"
+                          )}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <GlassContainer className="p-8 bg-salon-cream/30 border-salon-gold/20 h-full flex flex-col items-center justify-center text-center">
+                    <Calendar size={48} className="text-salon-gold/50 mb-4" />
+                    <h4 className="text-xl font-serif font-bold text-salon-espresso mb-2">Schedule Setup</h4>
+                    <p className="text-sm text-salon-gold">Select the preferred date and time on the left to continue.</p>
+                    {bookingData.time && bookingData.date && (
+                      <StylizedButton onClick={() => setStep(5)} className="w-full mt-8">Continue to Summary</StylizedButton>
+                    )}
+                    <StylizedButton variant="ghost" onClick={() => setStep(3)} className="w-full mt-2 text-xs">Back to Artisan</StylizedButton>
+                  </GlassContainer>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 5 && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h3 className="text-2xl font-serif font-bold text-salon-espresso text-center">Finalize Booking</h3>
+              <div className="max-w-md mx-auto">
+                <GlassContainer className="p-8 bg-salon-cream/30 border-salon-gold/20 flex flex-col">
+                  <h4 className="text-sm uppercase tracking-widest font-bold text-salon-gold mb-6">Booking Summary</h4>
+                  <div className="space-y-4 mb-auto">
+                    <div className="flex justify-between items-start">
+                      <span className="text-salon-gold text-sm">Client Name</span>
+                      <span className="font-bold text-salon-espresso text-right">{bookingData.clientName}</span>
+                    </div>
+                    <div className="flex justify-between items-start">
+                      <span className="text-salon-gold text-sm">Phone</span>
+                      <span className="font-bold text-salon-espresso text-right">{bookingData.clientPhone}</span>
+                    </div>
+                    <div className="h-[1px] bg-salon-ivory/50 my-4"></div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-salon-gold text-sm">Service</span>
+                      <span className="font-bold text-salon-espresso text-right max-w-[180px] truncate">{bookingData.service}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-salon-gold text-sm">Artisan</span>
+                      <span className="font-bold text-salon-espresso">{bookingData.stylistName}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-salon-gold text-sm">Date & Time</span>
+                      <span className="font-bold text-salon-espresso text-right">{bookingData.date} <br/><span className="text-salon-bronze">{bookingData.time}</span></span>
+                    </div>
+                    <div className="h-[1px] bg-salon-ivory/50 my-4"></div>
+                    <div className="flex justify-between items-center text-lg">
+                      <span className="font-serif font-bold text-salon-espresso">Total</span>
+                      <span className="font-bold text-salon-bronze">${bookingData.price}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-8 space-y-4">
+                    <StylizedButton 
+                      onClick={handleComplete}
+                      className="w-full py-4"
+                    >
+                      Confirm Booking
+                    </StylizedButton>
+                    <StylizedButton variant="ghost" onClick={() => setStep(4)} className="w-full text-xs">Back to Schedule</StylizedButton>
+                  </div>
+                </GlassContainer>
+              </div>
+            </div>
+          )}
+
+          {step === 6 && (
+            <div className="text-center space-y-6 animate-in zoom-in duration-500 py-12">
+              <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-8">
+                <CheckCircle2 size={48} />
+              </div>
+              <h3 className="text-4xl font-serif font-bold text-salon-espresso">Booking Confirmed!</h3>
+              <p className="text-salon-gold max-w-md mx-auto">The appointment for {bookingData.clientName} has been successfully added to the system.</p>
+              <div className="pt-8 flex gap-4 justify-center">
+                <StylizedButton variant="ghost" onClick={handleResetAdd}>View All Bookings</StylizedButton>
+                <StylizedButton variant="primary" onClick={() => { setStep(1); setBookingData({ ...bookingData, clientName: '', clientPhone: '', clientAddress: '' }); }}>Book Another</StylizedButton>
+              </div>
+            </div>
+          )}
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout navItems={OWNER_NAV} title="All Bookings" userRole="Owner">
+      <div className="flex justify-between items-center mb-8">
+        <h3 className="text-2xl font-serif font-bold text-salon-espresso">Salon Appointments</h3>
+        <StylizedButton variant="primary" onClick={() => setView('add')}>
+          <Plus size={18} className="mr-2" />
+          Create Booking
+        </StylizedButton>
+      </div>
+
+      <GlassContainer className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left min-w-[800px]">
+            <thead className="bg-salon-cream/30 border-b border-salon-ivory/50">
+              <tr className="text-[10px] uppercase tracking-widest text-salon-gold font-bold">
+                <th className="px-6 py-4">Client</th>
+                <th className="px-6 py-4">Service</th>
+                <th className="px-6 py-4">Artisan</th>
+                <th className="px-6 py-4">Date & Time</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              {bookings.map((booking) => (
+                <tr key={booking.id} className="border-b border-salon-ivory/20 last:border-0 hover:bg-salon-cream/20 transition-colors">
+                  <td className="px-6 py-4 font-bold text-salon-espresso">{booking.clientName}</td>
+                  <td className="px-6 py-4 text-sm text-salon-espresso">{booking.service}</td>
+                  <td className="px-6 py-4 text-sm text-salon-gold">{booking.stylistName}</td>
+                  <td className="px-6 py-4">
+                    <p className="text-sm text-salon-espresso font-medium">{booking.date}</p>
+                    <p className="text-[10px] text-salon-gold font-bold uppercase tracking-widest">{booking.time}</p>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={cn(
+                      "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
+                      booking.status === 'confirmed' ? "bg-green-100 text-green-600" :
+                      booking.status === 'pending' ? "bg-yellow-100 text-yellow-600" :
+                      booking.status === 'completed' ? "bg-blue-100 text-blue-600" : "bg-red-100 text-red-600"
+                    )}>
+                      {booking.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm font-bold text-salon-bronze">${booking.price}</td>
+                </tr>
+              ))}
+              {bookings.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-salon-gold italic">No bookings found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </GlassContainer>
     </DashboardLayout>
   );
 };

@@ -23,6 +23,7 @@ export const OWNER_NAV = [
   { label: 'Dashboard', href: '/owner/dashboard', icon: <LayoutDashboard size={20} /> },
   { label: 'Analytics', href: '/owner/analytics', icon: <BarChart3 size={20} /> },
   { label: 'Staff', href: '/owner/staff', icon: <Users size={20} /> },
+  { label: 'Bookings', href: '/owner/bookings', icon: <Calendar size={20} /> },
   { label: 'Inventory', href: '/owner/inventory', icon: <Package size={20} /> },
   { label: 'Promotions', href: '/owner/promotions', icon: <Sparkles size={20} /> },
 ];
