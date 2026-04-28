@@ -9,7 +9,8 @@ import {
   OwnerStaff, 
   OwnerInventory,
   OwnerPromotions,
-  OwnerBookings
+  OwnerBookings,
+  OwnerServices
 } from './components/pages/owner/OwnerPages';
 
 // Employee Pages
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="/owner/analytics" element={<OwnerAnalytics />} />
           <Route path="/owner/staff" element={<OwnerStaff />} />
           <Route path="/owner/bookings" element={<OwnerBookings />} />
+          <Route path="/owner/services" element={<OwnerServices />} />
           <Route path="/owner/inventory" element={<OwnerInventory />} />
           <Route path="/owner/promotions" element={<OwnerPromotions />} />
 

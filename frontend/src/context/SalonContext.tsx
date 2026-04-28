@@ -2,6 +2,15 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export type UserRole = 'owner' | 'employee' | 'customer' | 'admin';
 
+export interface Service {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  duration: string;
+  description: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -84,6 +93,9 @@ interface SalonContextType {
   user: User | null;
   login: (role: UserRole) => void;
   logout: () => void;
+  services: Service[];
+  addService: (service: Omit<Service, 'id'>) => void;
+  deleteService: (id: string) => void;
   bookings: Booking[];
   addBooking: (booking: Omit<Booking, 'id'>) => void;
   updateBookingStatus: (id: string, status: Booking['status']) => void;
@@ -106,6 +118,11 @@ const SalonContext = createContext<SalonContextType | undefined>(undefined);
 
 export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [services, setServices] = useState<Service[]>([
+    { id: 'srv1', name: 'Balayage & Cut', category: 'Coloring', price: 180, duration: '120 mins', description: 'Full balayage treatment with styling cut.' },
+    { id: 'srv2', name: 'Men\'s Executive Cut', category: 'Haircut', price: 65, duration: '45 mins', description: 'Premium men\'s haircut with wash and hot towel.' },
+    { id: 'srv3', name: 'Deep Conditioning', category: 'Treatments', price: 85, duration: '60 mins', description: 'Intensive moisture mask and scalp massage.' },
+  ]);
   const [bookings, setBookings] = useState<Booking[]>([
     { id: '1', clientId: 'c1', clientName: 'Sarah J.', service: 'Balayage & Cut', stylistId: 's1', stylistName: 'Alex Rivers', date: '2026-04-15', time: '10:30 AM', status: 'confirmed', price: 180 },
     { id: '2', clientId: 'c2', clientName: 'Michael R.', service: 'Men\'s Executive Cut', stylistId: 's2', stylistName: 'Jordan Lee', date: '2026-04-15', time: '11:45 AM', status: 'pending', price: 65 },
@@ -230,6 +247,42 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b));
   };
 
+  const addService = (serviceData: Omit<Service, 'id'>) => {
+    const newService: Service = {
+      ...serviceData,
+      id: `srv${services.length + 1}`
+    };
+    setServices(prev => [newService, ...prev]);
+
+    // Log activity
+    const newLog: ActivityLog = {
+      id: `l${activityLogs.length + 1}`,
+      timestamp: new Date().toLocaleString(),
+      action: `New Service Created: "${newService.name}"`,
+      user: user?.name || 'Owner',
+      status: 'Success',
+      type: 'salon'
+    };
+    setActivityLogs(prev => [newLog, ...prev]);
+  };
+
+  const deleteService = (id: string) => {
+    const service = services.find(s => s.id === id);
+    setServices(prev => prev.filter(s => s.id !== id));
+
+    // Log activity
+    const newLog: ActivityLog = {
+      id: `l${activityLogs.length + 1}`,
+      timestamp: new Date().toLocaleString(),
+      action: `Service Deleted: "${service?.name}"`,
+      user: user?.name || 'Owner',
+      status: 'Warning',
+      type: 'salon'
+    };
+    setActivityLogs(prev => [newLog, ...prev]);
+  };
+
+
   const updateInventory = (id: string, stock: number) => {
     setInventory(prev => prev.map(item => item.id === id ? { ...item, stock } : item));
   };
@@ -343,7 +396,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   return (
     <SalonContext.Provider value={{ 
-      user, login, logout, bookings, addBooking, updateBookingStatus, staff, addStaff, deleteStaff, inventory, updateInventory, orderSupplies,
+      user, login, logout, services, addService, deleteService, bookings, addBooking, updateBookingStatus, staff, addStaff, deleteStaff, inventory, updateInventory, orderSupplies,
       salons, addSalon, users, updateUserProfile, discounts, addDiscount, activityLogs
     }}>
       {children}

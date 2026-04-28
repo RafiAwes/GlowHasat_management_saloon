@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { DashboardLayout } from '@/src/components/layouts/DashboardLayout';
 import { StatCard, GlassContainer, StylizedButton } from '@/src/components/ui/Shared';
-import { useSalon, Staff, InventoryItem, Discount } from '@/src/context/SalonContext';
+import { useSalon, Staff, InventoryItem, Discount, Service } from '@/src/context/SalonContext';
 import { cn } from '@/src/lib/utils';
 import { OWNER_NAV } from '@/src/constants';
 
@@ -1226,6 +1226,121 @@ export const OwnerBookings = () => {
           </table>
         </div>
       </GlassContainer>
+    </DashboardLayout>
+  );
+};
+
+export const OwnerServices = () => {
+  const { services, addService, deleteService } = useSalon();
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAddService = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    addService({
+      name: formData.get('name') as string,
+      category: formData.get('category') as string,
+      price: parseInt(formData.get('price') as string),
+      duration: formData.get('duration') as string,
+      description: formData.get('description') as string,
+    });
+    setIsAdding(false);
+  };
+
+  const handleDeleteService = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (window.confirm("Are you sure you want to delete this service?")) {
+      deleteService(id);
+    }
+  };
+
+  return (
+    <DashboardLayout navItems={OWNER_NAV} title="Service Menu Management" userRole="Owner">
+      <div className="flex justify-between items-center mb-8">
+        <h3 className="text-2xl font-serif font-bold text-salon-espresso">Salon Services</h3>
+        <StylizedButton variant="primary" onClick={() => setIsAdding(true)}>
+          <Plus size={18} className="mr-2" />
+          Add Service
+        </StylizedButton>
+      </div>
+
+      {isAdding && (
+        <GlassContainer className="p-8 mb-8 animate-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-12 rounded-xl bg-salon-cream flex items-center justify-center text-salon-bronze">
+              <Scissors size={24} />
+            </div>
+            <div>
+              <h3 className="text-xl font-serif font-bold text-salon-espresso">New Service Profile</h3>
+              <p className="text-xs text-salon-gold">Define the details of the new offering</p>
+            </div>
+          </div>
+          
+          <form onSubmit={handleAddService} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase font-bold text-salon-gold tracking-widest">Service Name</label>
+              <input name="name" required className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20" placeholder="e.g. Signature Balayage" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase font-bold text-salon-gold tracking-widest">Category</label>
+              <select name="category" className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20">
+                <option>Haircut</option>
+                <option>Coloring</option>
+                <option>Styling</option>
+                <option>Treatments</option>
+                <option>Extensions</option>
+              </select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-[10px] uppercase font-bold text-salon-gold tracking-widest">Description</label>
+              <textarea name="description" required className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20 h-24 resize-none" placeholder="Detail what this service includes..." />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase font-bold text-salon-gold tracking-widest">Price ($)</label>
+              <input name="price" type="number" required min="1" className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20" placeholder="e.g. 150" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase font-bold text-salon-gold tracking-widest">Duration</label>
+              <input name="duration" required className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20" placeholder="e.g. 90 mins" />
+            </div>
+            <div className="md:col-span-2 flex justify-end gap-3 mt-4">
+              <StylizedButton variant="ghost" type="button" onClick={() => setIsAdding(false)}>Cancel</StylizedButton>
+              <StylizedButton variant="primary" type="submit">Publish Service</StylizedButton>
+            </div>
+          </form>
+        </GlassContainer>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {services.map(service => (
+          <GlassContainer key={service.id} className="p-6 relative group overflow-hidden">
+            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+              <button 
+                onClick={(e) => handleDeleteService(e, service.id)}
+                className="w-8 h-8 rounded-full bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 hover:text-red-500 transition-colors shadow-sm"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <span className="px-3 py-1 bg-salon-cream/50 text-salon-gold rounded-full text-[10px] font-bold uppercase tracking-widest">
+                {service.category}
+              </span>
+            </div>
+            <h4 className="text-xl font-serif font-bold text-salon-espresso mb-2 pr-12">{service.name}</h4>
+            <p className="text-sm text-salon-gold mb-6 line-clamp-2">{service.description}</p>
+            
+            <div className="flex items-center justify-between pt-4 border-t border-salon-ivory/50">
+              <div className="flex items-center gap-2 text-salon-espresso font-medium">
+                <Clock size={16} className="text-salon-gold" />
+                <span className="text-sm">{service.duration}</span>
+              </div>
+              <p className="text-xl font-bold text-salon-bronze">${service.price}</p>
+            </div>
+          </GlassContainer>
+        ))}
+      </div>
     </DashboardLayout>
   );
 };
