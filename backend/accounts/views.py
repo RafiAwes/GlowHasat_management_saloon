@@ -1,13 +1,34 @@
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .serializers import CustomTokenObtainPairSerializer
+from .serializers import CustomTokenObtainPairSerializer, UserProfileSerializer
 from django.contrib.auth import get_user_model
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import RegisterSerializer
 from utils.mixins import ApiResponseMixin
+from .models import UserProfile
 
 User = get_user_model()
+
+class UserProfileView(generics.RetrieveUpdateAPIView, ApiResponseMixin):
+    serializer_class = UserProfileSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_object(self):
+        return self.request.user.profile
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return self.success_response(serializer.data, message="Profile retrieved successfully")
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return self.success_response(serializer.data, message="Profile updated successfully")
 
 class RegisterView(generics.CreateAPIView, ApiResponseMixin):
     queryset = User.objects.all()

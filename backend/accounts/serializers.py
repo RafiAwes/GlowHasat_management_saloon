@@ -1,7 +1,7 @@
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
 from rest_framework import serializers 
-from .models import RoleChoice
+from .models import RoleChoice, UserProfile
 
 User = get_user_model()
 
@@ -19,9 +19,37 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data['password'],
             first_name=validated_data.get('first_name', ''),
             last_name=validated_data.get('last_name', ''),
-            role=RoleChoice.ADMIN_SUPER,
+            role=RoleChoice.USER,
         )
         return user
+    
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'first_name', 'last_name', 'phone_number', 'role']
+        read_only_fields = ['id', 'email', 'role']
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+
+    class Meta:
+        model = UserProfile
+        fields = ['user', 'reward_points', 'tier_level', 'order_status_notifications', 'marketing_notifications', 'avatar_url']
+        read_only_fields = ['reward_points', 'tier_level']
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', {})
+        user = instance.user
+
+        for attr, value in user_data.items():
+            setattr(user, attr, value)
+        user.save()
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        return instance
     
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
