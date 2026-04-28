@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { SalonProvider } from './context/SalonContext';
-import { LoginPage } from './components/pages/Auth';
+import { LoginPage, RegisterPage } from './components/pages/Auth';
 
 // Owner Pages
 import { 
@@ -43,7 +43,7 @@ export default function App() {
         <Routes>
           {/* Auth Routes */}
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
 
           {/* Owner Panel */}
           <Route path="/owner/dashboard" element={<OwnerDashboard />} />
