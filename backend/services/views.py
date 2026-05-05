@@ -17,3 +17,15 @@ class ServiceViewSet(ApiResponseMixin, viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         return self.success_response(serializer.data, message="Service created successfully")
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return self.success_response(serializer.data, message="Service updated successfully")
+
+    def perform_destroy(self, instance):
+        instance.is_active = False
+        instance.save()

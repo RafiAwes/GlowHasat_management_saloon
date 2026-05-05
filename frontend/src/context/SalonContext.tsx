@@ -97,6 +97,7 @@ interface SalonContextType {
   logout: () => void;
   services: Service[];
   addService: (service: Omit<Service, 'id'>) => Promise<void>;
+  updateService: (id: string, data: Partial<Service>) => Promise<void>;
   deleteService: (id: string) => Promise<void>;
   bookings: Booking[];
   addBooking: (booking: Omit<Booking, 'id'>) => Promise<void>;
@@ -338,7 +339,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const fetchStaff = async () => {
     try {
-      const response = await api.get('/staffs/staffs/');
+      const response = await api.get('/staffs/');
       const rows = Array.isArray(response.data) ? response.data : [];
       setStaff(rows.map(mapStaff));
     } catch (err) {
@@ -357,7 +358,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const fetchServices = async () => {
     try {
-      const response = await api.get('/services/services/');
+      const response = await api.get('/services/');
       const rows = Array.isArray(response.data) ? response.data : [];
       setServices(rows.map(mapService));
     } catch (err) {
@@ -367,7 +368,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const addService = async (serviceData: Omit<Service, 'id'>) => {
     try {
-      const response = await api.post('/services/services/', serviceData);
+      const response = await api.post('/services/', serviceData);
       const newService = mapService(response.data);
       setServices(prev => [...prev, newService]);
       logActivity(`New service added: ${newService.name}`, user?.name || 'Owner');
@@ -376,9 +377,20 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const updateService = async (id: string, data: Partial<Service>) => {
+    try {
+      const response = await api.patch(`/services/${id}/`, data);
+      const updated = mapService(response.data);
+      setServices(prev => prev.map(s => s.id === id ? updated : s));
+      logActivity(`Service updated: ${updated.name}`, user?.name || 'Owner');
+    } catch (err) {
+      console.error('Failed to update service', err);
+    }
+  };
+
   const deleteService = async (id: string) => {
     try {
-      await api.delete(`/services/services/${id}/`);
+      await api.delete(`/services/${id}/`);
       setServices(prev => prev.filter(s => s.id !== id));
     } catch (err) {
       console.error('Failed to delete service', err);
@@ -400,7 +412,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const fetchBookings = async () => {
     try {
-      const response = await api.get('/bookings/bookings/');
+      const response = await api.get('/bookings/');
       const rows = Array.isArray(response.data) ? response.data : [];
       setBookings(rows.map(mapBooking));
     } catch (err) {
@@ -420,7 +432,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         status: bookingData.status,
         price: bookingData.price,
       };
-      const response = await api.post('/bookings/bookings/', payload);
+      const response = await api.post('/bookings/', payload);
       const newBooking = mapBooking(response.data);
       setBookings(prev => [...prev, newBooking]);
       logActivity(`New booking created for ${newBooking.clientName}`, user?.name || 'Owner');
@@ -436,7 +448,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (data.stylistId) payload.staff = data.stylistId;
       if (data.clientName) payload.client_name = data.clientName;
       
-      const response = await api.patch(`/bookings/bookings/${id}/`, payload);
+      const response = await api.patch(`/bookings/${id}/`, payload);
       const updated = mapBooking(response.data);
       setBookings(prev => prev.map(b => b.id === id ? updated : b));
     } catch (err) {
@@ -446,7 +458,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const deleteBooking = async (id: string) => {
     try {
-      await api.delete(`/bookings/bookings/${id}/`);
+      await api.delete(`/bookings/${id}/`);
       setBookings(prev => prev.filter(b => b.id !== id));
     } catch (err) {
       console.error('Failed to delete booking', err);
@@ -619,7 +631,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   return (
     <SalonContext.Provider value={{ 
-      user, loading, login, register, logout, services, addService, deleteService, bookings,
+      user, loading, login, register, logout, services, addService, updateService, deleteService, bookings,
       addBooking,
       updateBooking,
       deleteBooking,

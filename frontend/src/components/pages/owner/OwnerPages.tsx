@@ -963,7 +963,7 @@ export const OwnerPromotions = () => {
 };
 
 export const OwnerBookings = () => {
-  const { bookings, addBooking, staff } = useSalon();
+  const { bookings, addBooking, staff, services } = useSalon();
   const [view, setView] = useState<'list' | 'add'>('list');
   const [step, setStep] = useState(1);
   const [bookingData, setBookingData] = useState({
@@ -977,12 +977,6 @@ export const OwnerBookings = () => {
     time: '',
     price: 0
   });
-
-  const services = [
-    { id: 's1', name: 'Signature Cut', price: 85, duration: '60 min', desc: 'Precision cutting tailored to your features.' },
-    { id: 's2', name: 'Balayage Artistry', price: 220, duration: '150 min', desc: 'Hand-painted highlights for a natural glow.' },
-    { id: 's3', name: 'GlowHaat Treatment', price: 65, duration: '45 min', desc: 'Deep conditioning ritual for silk-like hair.' },
-  ];
 
   const handleComplete = () => {
     // Convert time if necessary or just use the chosen string '09:00 AM'
@@ -1094,7 +1088,7 @@ export const OwnerBookings = () => {
                   >
                     <div>
                       <h4 className="text-lg font-serif font-bold text-salon-espresso">{s.name}</h4>
-                      <p className="text-sm text-salon-gold mb-1">{s.desc}</p>
+                      <p className="text-sm text-salon-gold mb-1">{s.description}</p>
                       <p className="text-[10px] uppercase tracking-widest font-bold text-salon-bronze">{s.duration}</p>
                     </div>
                     <div className="text-right">
@@ -1103,6 +1097,9 @@ export const OwnerBookings = () => {
                     </div>
                   </GlassContainer>
                 ))}
+                {services.length === 0 && (
+                  <div className="text-center py-12 text-salon-gold italic">No services available. Please add some first.</div>
+                )}
               </div>
             </div>
           )}
@@ -1119,7 +1116,7 @@ export const OwnerBookings = () => {
                         <div>
                           <p className="text-[10px] uppercase tracking-widest font-bold text-salon-gold mb-1">Selected Service</p>
                           <h4 className="text-xl font-serif font-bold text-salon-espresso">{selectedServiceObj.name}</h4>
-                          <p className="text-sm text-salon-gold mt-1 max-w-sm">{selectedServiceObj.desc}</p>
+                          <p className="text-sm text-salon-gold mt-1 max-w-sm">{selectedServiceObj.description}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-xl font-serif font-bold text-salon-espresso">${selectedServiceObj.price}</p>
