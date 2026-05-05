@@ -95,9 +95,9 @@ export const DashboardLayout = ({ children, navItems, title, userRole }: Dashboa
               <span className="font-medium text-sm">Settings</span>
             </Link>
             <button
-              onClick={() => {
-                logout();
-                navigate('/login');
+              onClick={async () => {
+                await logout();
+                navigate('/login', { replace: true });
               }}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-50 transition-all"
             >

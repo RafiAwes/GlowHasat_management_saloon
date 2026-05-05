@@ -6,23 +6,36 @@ import { useSalon, UserRole } from '@/src/context/SalonContext';
 import { cn } from '@/src/lib/utils';
 
 export const LoginPage = () => {
-  const { login } = useSalon();
+  const { login, user } = useSalon();
   const navigate = useNavigate();
-  const [selectedRole, setSelectedRole] = useState<UserRole>('customer');
-  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  React.useEffect(() => {
+    if (user) {
+      const routes: Record<string, string> = {
+        owner: '/owner/dashboard',
+        employee: '/employee/schedule',
+        customer: '/customer/home',
+        admin: '/admin/dashboard',
+      };
+      navigate(routes[user.role] || '/customer/home');
+    }
+  }, [user, navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(selectedRole);
-    
-    const routes: Record<UserRole, string> = {
-      owner: '/owner/dashboard',
-      employee: '/employee/schedule',
-      customer: '/customer/home',
-      admin: '/admin/dashboard',
-    };
-    
-    navigate(routes[selectedRole]);
+    setIsLoading(true);
+    setError('');
+    try {
+      await login(email, password);
+    } catch (err) {
+      setError('Invalid email or password. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const roles: { id: UserRole; label: string; desc: string }[] = [
@@ -54,47 +67,22 @@ export const LoginPage = () => {
           </div>
 
           <form className="space-y-6" onSubmit={handleLogin}>
-            <div className="space-y-2 relative">
-              <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Access Role</label>
-              <button 
-                type="button"
-                onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
-                className="w-full flex items-center justify-between bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 text-sm text-salon-espresso transition-all hover:bg-salon-cream/50"
-              >
-                <span className="font-semibold">{roles.find(r => r.id === selectedRole)?.label}</span>
-                <ChevronDown size={18} className={cn("text-salon-gold transition-transform", isRoleDropdownOpen && "rotate-180")} />
-              </button>
-
-              {isRoleDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-salon-ivory/50 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                  {roles.map((role) => (
-                    <button
-                      key={role.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedRole(role.id);
-                        setIsRoleDropdownOpen(false);
-                      }}
-                      className={cn(
-                        "w-full text-left p-4 hover:bg-salon-cream transition-colors border-b border-salon-ivory/20 last:border-0",
-                        selectedRole === role.id && "bg-salon-cream/50"
-                      )}
-                    >
-                      <p className="text-sm font-bold text-salon-espresso">{role.label}</p>
-                      <p className="text-[10px] text-salon-gold">{role.desc}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
+            {error && (
+              <div className="p-3 bg-red-50 text-red-500 rounded-xl text-sm font-medium border border-red-100">
+                {error}
+              </div>
+            )}
+            
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Email Address</label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-salon-gold" size={18} />
                 <input 
                   type="email" 
-                  defaultValue={selectedRole + "@zenith.com"}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="hello@zenith.com"
+                  required
                   className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-salon-gold/20 focus:border-salon-gold outline-none transition-all text-sm"
                 />
               </div>
@@ -109,14 +97,17 @@ export const LoginPage = () => {
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-salon-gold" size={18} />
                 <input 
                   type="password" 
-                  defaultValue="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
                   className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-salon-gold/20 focus:border-salon-gold outline-none transition-all text-sm"
                 />
               </div>
             </div>
 
-            <StylizedButton type="submit" className="w-full py-4 text-base group">
-              Sign In as {roles.find(r => r.id === selectedRole)?.label}
+            <StylizedButton type="submit" className="w-full py-4 text-base group" disabled={isLoading}>
+              {isLoading ? 'Signing In...' : 'Sign In'}
               <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
             </StylizedButton>
           </form>
@@ -135,13 +126,38 @@ export const LoginPage = () => {
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
-  const { login } = useSalon();
+  const { register } = useSalon();
+  
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate register and login as customer
-    login('customer');
-    navigate('/customer/home');
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      const parts = fullName.split(' ');
+      const first_name = parts[0];
+      const last_name = parts.slice(1).join(' ');
+
+      await register({
+        first_name,
+        last_name,
+        email,
+        phone_number: phone,
+        password
+      });
+      navigate('/login');
+    } catch (err) {
+      setError('Registration failed. Please check your details and try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -166,12 +182,20 @@ export const RegisterPage = () => {
           </div>
 
           <form className="space-y-6" onSubmit={handleRegister}>
+            {error && (
+              <div className="p-3 bg-red-50 text-red-500 rounded-xl text-sm font-medium border border-red-100">
+                {error}
+              </div>
+            )}
+            
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Full Name</label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 text-salon-gold" size={18} />
                 <input 
                   type="text" 
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
                   placeholder="Jane Doe"
                   required
                   className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-salon-gold/20 focus:border-salon-gold outline-none transition-all text-sm"
@@ -185,6 +209,8 @@ export const RegisterPage = () => {
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-salon-gold" size={18} />
                 <input 
                   type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="jane@example.com"
                   required
                   className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-salon-gold/20 focus:border-salon-gold outline-none transition-all text-sm"
@@ -198,6 +224,8 @@ export const RegisterPage = () => {
                 <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-salon-gold" size={18} />
                 <input 
                   type="tel" 
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   placeholder="+1 (555) 000-0000"
                   required
                   className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-salon-gold/20 focus:border-salon-gold outline-none transition-all text-sm"
@@ -211,6 +239,8 @@ export const RegisterPage = () => {
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-salon-gold" size={18} />
                 <input 
                   type="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
                   className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-salon-gold/20 focus:border-salon-gold outline-none transition-all text-sm"
@@ -218,8 +248,8 @@ export const RegisterPage = () => {
               </div>
             </div>
 
-            <StylizedButton type="submit" className="w-full py-4 text-base group">
-              Create Account
+            <StylizedButton type="submit" className="w-full py-4 text-base group" disabled={isLoading}>
+              {isLoading ? 'Creating Account...' : 'Create Account'}
               <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
             </StylizedButton>
           </form>

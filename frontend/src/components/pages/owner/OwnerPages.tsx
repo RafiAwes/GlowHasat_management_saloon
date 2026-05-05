@@ -79,6 +79,16 @@ const staffPerformanceData = [
   { name: 'Morgan', revenue: 2900, bookings: 28 },
 ];
 
+const weekDays = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+];
+
 export const OwnerDashboard = () => {
   const { bookings, staff } = useSalon();
   
@@ -299,37 +309,87 @@ export const OwnerStaff = () => {
   const [view, setView] = useState<'list' | 'details' | 'add'>('list');
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [workingStartTime, setWorkingStartTime] = useState('09:00');
+  const [workingEndTime, setWorkingEndTime] = useState('17:00');
+  const [daysOff, setDaysOff] = useState<string[]>([]);
 
-  const handleDeleteStaff = (e: React.MouseEvent, id: string) => {
+  const formatTimeLabel = (time: string) => {
+    if (!time) return '';
+    const [hoursRaw, minutes] = time.split(':');
+    const hours = Number(hoursRaw);
+    if (Number.isNaN(hours)) return time;
+    const suffix = hours >= 12 ? 'PM' : 'AM';
+    const normalizedHours = ((hours + 11) % 12) + 1;
+    return `${normalizedHours.toString().padStart(2, '0')}:${minutes} ${suffix}`;
+  };
+
+  const toggleDayOff = (day: string) => {
+    setDaysOff(prev =>
+      prev.includes(day)
+        ? prev.filter(item => item !== day)
+        : [...prev, day]
+    );
+  };
+
+  const resetFormState = () => {
+    setAvatarPreview(null);
+    setAvatarFile(null);
+    setWorkingStartTime('09:00');
+    setWorkingEndTime('17:00');
+    setDaysOff([]);
+  };
+
+  const handleDeleteStaff = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (window.confirm("Are you sure you want to remove this staff member? This will also disable their system access.")) {
-      deleteStaff(id);
+      try {
+        await deleteStaff(id);
+      } catch (err) {
+        console.error('Failed to delete staff', err);
+        alert('Failed to remove staff member. Please try again.');
+      }
     }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setAvatarFile(file);
       setAvatarPreview(URL.createObjectURL(file));
     }
   };
 
-  const handleAddStaff = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddStaff = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    addStaff({
-      name: formData.get('name') as string,
-      role: formData.get('role') as string,
-      avatar: avatarPreview || `https://picsum.photos/seed/${Math.random()}/200/200`
-    });
-    setAvatarPreview(null);
-    setView('list');
+    try {
+      const workingHours = `${formatTimeLabel(workingStartTime)} - ${formatTimeLabel(workingEndTime)}`;
+      await addStaff({
+        first_name: String(formData.get('first_name') || ''),
+        last_name: String(formData.get('last_name') || ''),
+        email: String(formData.get('email') || ''),
+        phone_number: String(formData.get('phone') || ''),
+        password: String(formData.get('password') || '') || undefined,
+        title: String(formData.get('title') || formData.get('role') || ''),
+        bio: String(formData.get('bio') || ''),
+        avatar: avatarFile,
+        avatar_url: avatarPreview || undefined,
+        working_hours: workingHours,
+        days_off: daysOff,
+      });
+      resetFormState();
+      setView('list');
+    } catch (err) {
+      console.error('Failed to add staff', err);
+      alert('Failed to add staff member. Please try again.');
+    }
   };
 
   if (view === 'add') {
     return (
       <DashboardLayout navItems={OWNER_NAV} title="Hire New Artisan" userRole="Owner">
-        <button onClick={() => { setView('list'); setAvatarPreview(null); }} className="flex items-center gap-2 text-salon-gold hover:text-salon-bronze mb-8 transition-colors">
+        <button onClick={() => { setView('list'); resetFormState(); }} className="flex items-center gap-2 text-salon-gold hover:text-salon-bronze mb-8 transition-colors">
           <ArrowLeft size={20} />
           <span className="font-bold uppercase tracking-widest text-xs">Back to Artisans</span>
         </button>
@@ -340,12 +400,28 @@ export const OwnerStaff = () => {
             <form onSubmit={handleAddStaff} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Full Name</label>
-                  <input name="name" required className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20" placeholder="e.g. Julian Vane" />
+                  <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">First Name</label>
+                  <input name="first_name" required className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20" placeholder="e.g. Julian" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Professional Role</label>
-                  <select name="role" className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20">
+                  <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Last Name</label>
+                  <input name="last_name" required className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20" placeholder="e.g. Vane" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Email</label>
+                  <input name="email" type="email" required className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20" placeholder="e.g. julian@example.com" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Phone Number</label>
+                  <input name="phone" type="tel" className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20" placeholder="e.g. +1 (555) 000-0000" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Password</label>
+                  <input name="password" type="password" minLength={8} className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20" placeholder="Minimum 8 characters" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Professional Role/Title</label>
+                  <select name="title" className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20">
                     <option>Senior Stylist</option>
                     <option>Master Barber</option>
                     <option>Color Specialist</option>
@@ -379,7 +455,68 @@ export const OwnerStaff = () => {
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Bio / Expertise</label>
-                <textarea className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20 h-32" placeholder="Tell us about their craft..." />
+                <textarea name="bio" className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20 h-32" placeholder="Tell us about their craft..." />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Working Hours</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <span className="text-[10px] uppercase tracking-wider text-salon-gold/80 font-bold ml-1">Start Time</span>
+                    <input
+                      type="time"
+                      value={workingStartTime}
+                      onChange={(e) => setWorkingStartTime(e.target.value)}
+                      className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <span className="text-[10px] uppercase tracking-wider text-salon-gold/80 font-bold ml-1">End Time</span>
+                    <input
+                      type="time"
+                      value={workingEndTime}
+                      onChange={(e) => setWorkingEndTime(e.target.value)}
+                      className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20"
+                    />
+                  </div>
+                </div>
+                <p className="text-[11px] text-salon-gold/80 ml-1">Saved as {formatTimeLabel(workingStartTime)} - {formatTimeLabel(workingEndTime)}</p>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-4">
+                  <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Days Off</label>
+                  <span className="text-[11px] text-salon-gold/80">Select any days the staff member does not work</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                  {weekDays.map((day) => {
+                    const selected = daysOff.includes(day);
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => toggleDayOff(day)}
+                        className={cn(
+                          'rounded-2xl border px-3 py-3 text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2',
+                          selected
+                            ? 'bg-salon-espresso text-white border-salon-espresso shadow-lg shadow-salon-espresso/10'
+                            : 'bg-salon-cream/20 text-salon-espresso border-salon-ivory/60 hover:border-salon-gold/40 hover:bg-salon-cream/40'
+                        )}
+                      >
+                        <span>{day.slice(0, 3)}</span>
+                        {selected && <CheckCircle2 size={14} />}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap pt-1">
+                  <span className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Selected:</span>
+                  {daysOff.length > 0 ? daysOff.map(day => (
+                    <span key={day} className="text-[11px] px-3 py-1 rounded-full bg-salon-cream text-salon-espresso border border-salon-ivory/60">
+                      {day}
+                    </span>
+                  )) : (
+                    <span className="text-[11px] text-salon-gold/70">No days selected</span>
+                  )}
+                </div>
               </div>
               <StylizedButton type="submit" className="w-full py-4">Confirm Onboarding</StylizedButton>
             </form>

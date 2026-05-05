@@ -6,6 +6,7 @@ from .managers import CustomUserManager
 # Create your models here.
 class RoleChoice(models.TextChoices):
     USER = 'USER', 'User'
+    EMPLOYEE = 'EMPLOYEE', 'Employee'
     MANAGER = 'MANAGER', 'Manager'
     ADMIN_SUPER = 'ADMIN_SUPER', 'Super'
     ADMIN_EDITOR = 'ADMIN_EDITOR', 'Editor'

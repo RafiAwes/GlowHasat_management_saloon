@@ -1,4 +1,6 @@
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.views import APIView
 from .serializers import CustomTokenObtainPairSerializer, UserProfileSerializer
 from django.contrib.auth import get_user_model
 from rest_framework import generics, status
@@ -62,3 +64,19 @@ class CustomTokenObtainPairView(TokenObtainPairView, ApiResponseMixin):
             return self.error_response(message="Invalid credentials", status_code=status.HTTP_401_UNAUTHORIZED, errors=str(e))
 
         return self.success_response(serializer.validated_data, message="Login successful")
+
+class LogoutView(APIView, ApiResponseMixin):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        try:
+            refresh_token = request.data.get("refresh")
+            if not refresh_token:
+                return self.error_response(message="Refresh token is required", status_code=status.HTTP_400_BAD_REQUEST)
+            
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return self.success_response(None, message="Logout successful")
+        except Exception as e:
+            return self.error_response(message="Invalid token", status_code=status.HTTP_400_BAD_REQUEST, errors=str(e))
+

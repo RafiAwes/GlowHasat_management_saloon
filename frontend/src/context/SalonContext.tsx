@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-
+import { api, setTokens, clearTokens, getAccessToken } from '@/src/lib/api';
 export type UserRole = 'owner' | 'employee' | 'customer' | 'admin';
 
 export interface Service {
@@ -91,7 +91,9 @@ export interface InventoryItem {
 
 interface SalonContextType {
   user: User | null;
-  login: (role: UserRole) => void;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (data: any) => Promise<void>;
   logout: () => void;
   services: Service[];
   addService: (service: Omit<Service, 'id'>) => void;
@@ -100,7 +102,9 @@ interface SalonContextType {
   addBooking: (booking: Omit<Booking, 'id'>) => void;
   updateBookingStatus: (id: string, status: Booking['status']) => void;
   staff: Staff[];
-  addStaff: (staffMember: Omit<Staff, 'id' | 'rating' | 'revenue'>) => void;
+  addStaff: (staffMember: any) => Promise<void>;
+  updateStaff: (id: string, staffData: any) => Promise<void>;
+  deleteStaff: (id: string) => Promise<void>;
   inventory: InventoryItem[];
   updateInventory: (id: string, stock: number) => void;
   orderSupplies: (id: string, quantity: number) => void;
@@ -108,7 +112,6 @@ interface SalonContextType {
   addSalon: (salon: Omit<Salon, 'id' | 'joinedDate' | 'revenue' | 'staffCount'>) => void;
   users: User[];
   updateUserProfile: (data: Partial<User>) => void;
-  deleteStaff: (id: string) => void;
   discounts: Discount[];
   addDiscount: (discount: Omit<Discount, 'id'>) => void;
   activityLogs: ActivityLog[];
@@ -118,6 +121,7 @@ const SalonContext = createContext<SalonContextType | undefined>(undefined);
 
 export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [services, setServices] = useState<Service[]>([
     { id: 'srv1', name: 'Balayage & Cut', category: 'Coloring', price: 180, duration: '120 mins', description: 'Full balayage treatment with styling cut.' },
     { id: 'srv2', name: 'Men\'s Executive Cut', category: 'Haircut', price: 65, duration: '45 mins', description: 'Premium men\'s haircut with wash and hot towel.' },
@@ -128,11 +132,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     { id: '2', clientId: 'c2', clientName: 'Michael R.', service: 'Men\'s Executive Cut', stylistId: 's2', stylistName: 'Jordan Lee', date: '2026-04-15', time: '11:45 AM', status: 'pending', price: 65 },
   ]);
 
-  const [staff, setStaff] = useState<Staff[]>([
-    { id: 's1', name: 'Alex Rivers', role: 'Senior Stylist', rating: 4.9, revenue: 4200, avatar: 'https://picsum.photos/seed/s1/100/100', workingHours: '09:00 AM - 06:00 PM', daysOff: ['Sunday', 'Monday'] },
-    { id: 's2', name: 'Jordan Lee', role: 'Master Barber', rating: 4.8, revenue: 3800, avatar: 'https://picsum.photos/seed/s2/100/100', workingHours: '10:00 AM - 07:00 PM', daysOff: ['Tuesday'] },
-    { id: 's3', name: 'Casey Smith', role: 'Color Specialist', rating: 4.7, revenue: 5100, avatar: 'https://picsum.photos/seed/s3/100/100', workingHours: '08:00 AM - 04:00 PM', daysOff: ['Sunday'] },
-  ]);
+  const [staff, setStaff] = useState<Staff[]>([]);
 
   const [inventory, setInventory] = useState<InventoryItem[]>([
     { id: 'i1', name: 'GlowHaat Silk Shampoo', category: 'Haircare', stock: 45, minStock: 10, price: 32 },
@@ -204,17 +204,114 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     { id: 'l4', timestamp: '2026-04-15 07:30:00', action: 'Inventory Alert: Luxe Hold Spray', user: 'system', status: 'Warning', type: 'salon' },
   ]);
 
-  const login = (role: UserRole) => {
-    const foundUser = users.find(u => u.role === role);
-    if (foundUser) {
-      setUser(foundUser);
-    } else {
-      // Fallback for customer/guest
-      setUser({ id: 'guest', name: 'Guest User', role: 'customer', email: 'guest@example.com', avatar: 'https://picsum.photos/seed/guest/100/100', status: 'active', lastActive: 'Just now' });
+  const fetchProfile = async () => {
+    try {
+      const response = await api.get('/accounts/profile');
+      const data = response.data;
+      
+      if (data && data.user) {
+        // Map backend roles to frontend roles
+        let mappedRole: UserRole = 'customer';
+        const rawRole = data.user.role.toUpperCase();
+        
+        if (rawRole === 'ADMIN_SUPER' || rawRole === 'ADMIN_EDITOR' || rawRole === 'ADMIN_SUPPORT') {
+          mappedRole = 'admin';
+        } else if (rawRole === 'MANAGER') {
+          mappedRole = 'owner';
+        } else if (rawRole === 'USER') {
+          mappedRole = 'customer';
+        } else if (rawRole === 'EMPLOYEE') {
+          mappedRole = 'employee';
+        }
+
+        setUser({
+          id: data.user.id,
+          name: `${data.user.first_name} ${data.user.last_name}`,
+          email: data.user.email,
+          role: mappedRole,
+          avatar: data.avatar_url || `https://picsum.photos/seed/${data.user.id}/100/100`,
+          status: 'active',
+          lastActive: 'Just now',
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch profile', err);
+      clearTokens();
     }
   };
 
-  const logout = () => setUser(null);
+  useEffect(() => {
+    const initAuth = async () => {
+      if (getAccessToken()) {
+        try {
+          await fetchProfile();
+          await fetchStaff();
+        } catch (err) {
+          console.error('Initial auth fetch failed', err);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+    initAuth();
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    try {
+      const resData = await fetch('http://localhost:8000/api/accounts/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      }).then(res => {
+        if (!res.ok) throw new Error('Login failed');
+        return res.json();
+      });
+      
+      if (resData.success && resData.data) {
+        setTokens(resData.data.access, resData.data.refresh);
+        await fetchProfile();
+      } else {
+        throw new Error(resData.message || 'Login failed');
+      }
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  };
+
+  const register = async (userData: any) => {
+    try {
+      const data = await fetch('http://localhost:8000/api/accounts/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      }).then(res => {
+        if (!res.ok) throw new Error('Registration failed');
+        return res.json();
+      });
+      return data;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      const refresh = localStorage.getItem('refresh_token');
+      if (refresh) {
+        await api.post('/accounts/logout', { refresh });
+      }
+    } catch (err) {
+      console.error('Logout API failed', err);
+    } finally {
+      clearTokens();
+      setUser(null);
+    }
+  };
+
 
   const addSalon = (salonData: Omit<Salon, 'id' | 'joinedDate' | 'revenue' | 'staffCount'>) => {
     const newSalon: Salon = {
@@ -305,56 +402,136 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setActivityLogs(prev => [newLog, ...prev]);
   };
 
-  const addStaff = (staffData: Omit<Staff, 'id' | 'rating' | 'revenue'>) => {
-    const newStaff: Staff = {
-      ...staffData,
-      id: `s${staff.length + 1}`,
-      rating: 5.0,
-      revenue: 0,
-      workingHours: '09:00 AM - 05:00 PM',
-      daysOff: ['Sunday']
-    };
-    setStaff(prev => [...prev, newStaff]);
+  const mapStaff = (item: any): Staff => ({
+    id: item.id,
+    name: `${item.user?.first_name || ''} ${item.user?.last_name || ''}`.trim() || 'Unnamed Staff',
+    role: item.title,
+    rating: 5,
+    revenue: 0,
+    avatar: item.avatar_url || `https://picsum.photos/seed/${item.id}/100/100`,
+    workingHours: item.working_hours || '',
+    daysOff: item.days_off || [],
+  });
 
-    // Also add to users list for login
-    const newUser: User = {
-      id: newStaff.id,
-      name: newStaff.name,
-      role: 'employee',
-      email: `${newStaff.name.toLowerCase().replace(' ', '.')}@glowhaat.com`,
-      avatar: newStaff.avatar,
-      status: 'active',
-      lastActive: 'Just joined'
-    };
-    setUsers(prev => [...prev, newUser]);
-
-    // Log activity
-    const newLog: ActivityLog = {
-      id: `l${activityLogs.length + 1}`,
-      timestamp: new Date().toLocaleString(),
-      action: `New Staff Hired: "${newStaff.name}"`,
-      user: user?.name || 'Owner',
-      status: 'Success',
-      type: 'user'
-    };
-    setActivityLogs(prev => [newLog, ...prev]);
+  const fetchStaff = async () => {
+    try {
+      const response = await api.get('/staffs/');
+      const rows = Array.isArray(response.data) ? response.data : [];
+      setStaff(rows.map(mapStaff));
+    } catch (err) {
+      console.error('Failed to fetch staff', err);
+    }
   };
 
-  const deleteStaff = (id: string) => {
-    const staffMember = staff.find(s => s.id === id);
-    setStaff(prev => prev.filter(s => s.id !== id));
-    setUsers(prev => prev.filter(u => u.id !== id));
+  const addStaff = async (staffData: any) => {
+    try {
+      const formData = new FormData();
+      
+      const first_name = staffData.first_name ?? staffData.name?.split(' ')[0] ?? '';
+      const last_name = staffData.last_name ?? staffData.name?.split(' ').slice(1).join(' ') ?? '';
+      const email = staffData.email || `${(first_name || 'staff').toLowerCase().replace(' ', '.')}@glowhaat.com`;
+      
+      formData.append('first_name', first_name);
+      formData.append('last_name', last_name);
+      formData.append('email', email);
+      if (staffData.phone_number) formData.append('phone_number', staffData.phone_number);
+      if (staffData.password) formData.append('password', staffData.password);
+      formData.append('title', staffData.title || staffData.role || '');
+      formData.append('bio', staffData.bio || '');
+      formData.append('working_hours', staffData.working_hours || '09:00 AM - 05:00 PM');
+      
+      // Handle days_off as JSON string for FormData compatibility
+      const daysOff = Array.isArray(staffData.days_off) ? staffData.days_off : [];
+      formData.append('days_off', JSON.stringify(daysOff));
+
+      if (staffData.avatar instanceof File) {
+        formData.append('avatar', staffData.avatar);
+      } else if (staffData.avatar_url && typeof staffData.avatar_url === 'string' && /^https?:\/\//i.test(staffData.avatar_url)) {
+        // If it's a URL and we don't have a file, the backend might handle it or we ignore it
+        // In our new system, we primarily want files.
+      }
+      
+      const response = await api.post('/staffs/', formData);
+      const newStaff = mapStaff(response.data);
+      setStaff(prev => [newStaff, ...prev]);
+
+      // Log activity
+      const newLog: ActivityLog = {
+        id: `l${activityLogs.length + 1}`,
+        timestamp: new Date().toLocaleString(),
+        action: `New Staff Hired: "${newStaff.name}"`,
+        user: user?.name || 'Owner',
+        status: 'Success',
+        type: 'user'
+      };
+      setActivityLogs(prev => [newLog, ...prev]);
+    } catch (err) {
+      console.error('Failed to add staff', err);
+      throw err;
+    }
+  };
+
+  const updateStaff = async (id: string, staffData: any) => {
+    try {
+      const formData = new FormData();
+      
+      if (staffData.first_name) formData.append('first_name', staffData.first_name);
+      if (staffData.last_name) formData.append('last_name', staffData.last_name);
+      if (staffData.email) formData.append('email', staffData.email);
+      if (staffData.phone_number !== undefined) formData.append('phone_number', staffData.phone_number || '');
+      if (staffData.password) formData.append('password', staffData.password);
+      if (staffData.title) formData.append('title', staffData.title);
+      if (staffData.bio !== undefined) formData.append('bio', staffData.bio || '');
+      if (staffData.working_hours) formData.append('working_hours', staffData.working_hours);
+      
+      if (staffData.days_off) {
+        formData.append('days_off', JSON.stringify(staffData.days_off));
+      }
+
+      if (staffData.avatar instanceof File) {
+        formData.append('avatar', staffData.avatar);
+      }
+      
+      const response = await api.patch(`/staffs/${id}/`, formData);
+      const updated = mapStaff(response.data);
+      setStaff(prev => prev.map(item => item.id === id ? updated : item));
+
+      // Log activity
+      const newLog: ActivityLog = {
+        id: `l${activityLogs.length + 1}`,
+        timestamp: new Date().toLocaleString(),
+        action: `Staff Updated: "${updated.name}"`,
+        user: user?.name || 'Owner',
+        status: 'Success',
+        type: 'user'
+      };
+      setActivityLogs(prev => [newLog, ...prev]);
+    } catch (err) {
+      console.error('Failed to update staff', err);
+      throw err;
+    }
+  };
+
+  const deleteStaff = async (id: string) => {
+    try {
+      const staffMember = staff.find(s => s.id === id);
+      await api.delete(`/staffs/${id}/`);
+      setStaff(prev => prev.filter(item => item.id !== id));
     
-    // Log activity
-    const newLog: ActivityLog = {
-      id: `l${activityLogs.length + 1}`,
-      timestamp: new Date().toLocaleString(),
-      action: `Staff Member Removed: "${staffMember?.name}"`,
-      user: user?.name || 'Owner',
-      status: 'Warning',
-      type: 'user'
-    };
-    setActivityLogs(prev => [newLog, ...prev]);
+      // Log activity
+      const newLog: ActivityLog = {
+        id: `l${activityLogs.length + 1}`,
+        timestamp: new Date().toLocaleString(),
+        action: `Staff Member Removed: "${staffMember?.name}"`,
+        user: user?.name || 'Owner',
+        status: 'Warning',
+        type: 'user'
+      };
+      setActivityLogs(prev => [newLog, ...prev]);
+    } catch (err) {
+      console.error('Failed to delete staff', err);
+      throw err;
+    }
   };
 
   const addDiscount = (discount: Omit<Discount, 'id'>) => {
@@ -396,7 +573,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   return (
     <SalonContext.Provider value={{ 
-      user, login, logout, services, addService, deleteService, bookings, addBooking, updateBookingStatus, staff, addStaff, deleteStaff, inventory, updateInventory, orderSupplies,
+      user, loading, login, register, logout, services, addService, deleteService, bookings, addBooking, updateBookingStatus, staff, addStaff, updateStaff, deleteStaff, inventory, updateInventory, orderSupplies,
       salons, addSalon, users, updateUserProfile, discounts, addDiscount, activityLogs
     }}>
       {children}
