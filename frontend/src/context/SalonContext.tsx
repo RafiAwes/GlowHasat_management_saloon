@@ -96,11 +96,12 @@ interface SalonContextType {
   register: (data: any) => Promise<void>;
   logout: () => void;
   services: Service[];
-  addService: (service: Omit<Service, 'id'>) => void;
-  deleteService: (id: string) => void;
+  addService: (service: Omit<Service, 'id'>) => Promise<void>;
+  deleteService: (id: string) => Promise<void>;
   bookings: Booking[];
-  addBooking: (booking: Omit<Booking, 'id'>) => void;
-  updateBookingStatus: (id: string, status: Booking['status']) => void;
+  addBooking: (booking: Omit<Booking, 'id'>) => Promise<void>;
+  updateBooking: (id: string, data: Partial<Booking>) => Promise<void>;
+  deleteBooking: (id: string) => Promise<void>;
   staff: Staff[];
   addStaff: (staffMember: any) => Promise<void>;
   updateStaff: (id: string, staffData: any) => Promise<void>;
@@ -122,15 +123,8 @@ const SalonContext = createContext<SalonContextType | undefined>(undefined);
 export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [services, setServices] = useState<Service[]>([
-    { id: 'srv1', name: 'Balayage & Cut', category: 'Coloring', price: 180, duration: '120 mins', description: 'Full balayage treatment with styling cut.' },
-    { id: 'srv2', name: 'Men\'s Executive Cut', category: 'Haircut', price: 65, duration: '45 mins', description: 'Premium men\'s haircut with wash and hot towel.' },
-    { id: 'srv3', name: 'Deep Conditioning', category: 'Treatments', price: 85, duration: '60 mins', description: 'Intensive moisture mask and scalp massage.' },
-  ]);
-  const [bookings, setBookings] = useState<Booking[]>([
-    { id: '1', clientId: 'c1', clientName: 'Sarah J.', service: 'Balayage & Cut', stylistId: 's1', stylistName: 'Alex Rivers', date: '2026-04-15', time: '10:30 AM', status: 'confirmed', price: 180 },
-    { id: '2', clientId: 'c2', clientName: 'Michael R.', service: 'Men\'s Executive Cut', stylistId: 's2', stylistName: 'Jordan Lee', date: '2026-04-15', time: '11:45 AM', status: 'pending', price: 65 },
-  ]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
 
   const [staff, setStaff] = useState<Staff[]>([]);
 
@@ -240,23 +234,6 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  useEffect(() => {
-    const initAuth = async () => {
-      if (getAccessToken()) {
-        try {
-          await fetchProfile();
-          await fetchStaff();
-        } catch (err) {
-          console.error('Initial auth fetch failed', err);
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        setLoading(false);
-      }
-    };
-    initAuth();
-  }, []);
 
   const login = async (email: string, password: string) => {
     try {
@@ -322,61 +299,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       staffCount: 0
     };
     setSalons(prev => [newSalon, ...prev]);
-    
-    // Log activity
-    const newLog: ActivityLog = {
-      id: `l${activityLogs.length + 1}`,
-      timestamp: new Date().toLocaleString(),
-      action: `New Salon Registered: "${newSalon.name}"`,
-      user: user?.name || 'System',
-      status: 'Success',
-      type: 'salon'
-    };
-    setActivityLogs(prev => [newLog, ...prev]);
-  };
-
-  const addBooking = (booking: Omit<Booking, 'id'>) => {
-    const newBooking = { ...booking, id: Math.random().toString(36).substr(2, 9) };
-    setBookings(prev => [newBooking, ...prev]);
-  };
-
-  const updateBookingStatus = (id: string, status: Booking['status']) => {
-    setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b));
-  };
-
-  const addService = (serviceData: Omit<Service, 'id'>) => {
-    const newService: Service = {
-      ...serviceData,
-      id: `srv${services.length + 1}`
-    };
-    setServices(prev => [newService, ...prev]);
-
-    // Log activity
-    const newLog: ActivityLog = {
-      id: `l${activityLogs.length + 1}`,
-      timestamp: new Date().toLocaleString(),
-      action: `New Service Created: "${newService.name}"`,
-      user: user?.name || 'Owner',
-      status: 'Success',
-      type: 'salon'
-    };
-    setActivityLogs(prev => [newLog, ...prev]);
-  };
-
-  const deleteService = (id: string) => {
-    const service = services.find(s => s.id === id);
-    setServices(prev => prev.filter(s => s.id !== id));
-
-    // Log activity
-    const newLog: ActivityLog = {
-      id: `l${activityLogs.length + 1}`,
-      timestamp: new Date().toLocaleString(),
-      action: `Service Deleted: "${service?.name}"`,
-      user: user?.name || 'Owner',
-      status: 'Warning',
-      type: 'salon'
-    };
-    setActivityLogs(prev => [newLog, ...prev]);
+    logActivity(`New Salon Registered: "${newSalon.name}"`, user?.name || 'System', 'Success', 'salon');
   };
 
 
@@ -415,11 +338,118 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const fetchStaff = async () => {
     try {
-      const response = await api.get('/staffs/');
+      const response = await api.get('/staffs/staffs/');
       const rows = Array.isArray(response.data) ? response.data : [];
       setStaff(rows.map(mapStaff));
     } catch (err) {
       console.error('Failed to fetch staff', err);
+    }
+  };
+
+  const mapService = (item: any): Service => ({
+    id: item.id,
+    name: item.name,
+    category: item.category,
+    price: Number(item.price),
+    duration: item.duration,
+    description: item.description || '',
+  });
+
+  const fetchServices = async () => {
+    try {
+      const response = await api.get('/services/services/');
+      const rows = Array.isArray(response.data) ? response.data : [];
+      setServices(rows.map(mapService));
+    } catch (err) {
+      console.error('Failed to fetch services', err);
+    }
+  };
+
+  const addService = async (serviceData: Omit<Service, 'id'>) => {
+    try {
+      const response = await api.post('/services/services/', serviceData);
+      const newService = mapService(response.data);
+      setServices(prev => [...prev, newService]);
+      logActivity(`New service added: ${newService.name}`, user?.name || 'Owner');
+    } catch (err) {
+      console.error('Failed to add service', err);
+    }
+  };
+
+  const deleteService = async (id: string) => {
+    try {
+      await api.delete(`/services/services/${id}/`);
+      setServices(prev => prev.filter(s => s.id !== id));
+    } catch (err) {
+      console.error('Failed to delete service', err);
+    }
+  };
+
+  const mapBooking = (item: any): Booking => ({
+    id: item.id,
+    clientId: item.client_email || 'walk-in',
+    clientName: item.client_name,
+    service: item.service_name,
+    stylistId: item.staff,
+    stylistName: item.staff_details ? `${item.staff_details.user?.first_name || ''} ${item.staff_details.user?.last_name || ''}`.trim() : 'Unknown',
+    date: item.date,
+    time: item.time,
+    status: item.status,
+    price: Number(item.price),
+  });
+
+  const fetchBookings = async () => {
+    try {
+      const response = await api.get('/bookings/bookings/');
+      const rows = Array.isArray(response.data) ? response.data : [];
+      setBookings(rows.map(mapBooking));
+    } catch (err) {
+      console.error('Failed to fetch bookings', err);
+    }
+  };
+
+  const addBooking = async (bookingData: Omit<Booking, 'id'>) => {
+    try {
+      const payload = {
+        staff: bookingData.stylistId,
+        service_name: bookingData.service,
+        client_name: bookingData.clientName,
+        client_email: bookingData.clientId.includes('@') ? bookingData.clientId : '',
+        date: bookingData.date,
+        time: bookingData.time,
+        status: bookingData.status,
+        price: bookingData.price,
+      };
+      const response = await api.post('/bookings/bookings/', payload);
+      const newBooking = mapBooking(response.data);
+      setBookings(prev => [...prev, newBooking]);
+      logActivity(`New booking created for ${newBooking.clientName}`, user?.name || 'Owner');
+    } catch (err) {
+      console.error('Failed to add booking', err);
+    }
+  };
+
+  const updateBooking = async (id: string, data: Partial<Booking>) => {
+    try {
+      // Map frontend fields back to backend if necessary
+      const payload: any = { ...data };
+      if (data.stylistId) payload.staff = data.stylistId;
+      if (data.clientName) payload.client_name = data.clientName;
+      
+      const response = await api.patch(`/bookings/bookings/${id}/`, payload);
+      const updated = mapBooking(response.data);
+      setBookings(prev => prev.map(b => b.id === id ? updated : b));
+    } catch (err) {
+      console.error('Failed to update booking', err);
+    }
+  };
+
+  const deleteBooking = async (id: string) => {
+    try {
+      await api.delete(`/bookings/bookings/${id}/`);
+      setBookings(prev => prev.filter(b => b.id !== id));
+    } catch (err) {
+      console.error('Failed to delete booking', err);
     }
   };
 
@@ -534,6 +564,18 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const logActivity = (action: string, userName: string, status: ActivityLog['status'] = 'Success', type: ActivityLog['type'] = 'salon') => {
+    const newLog: ActivityLog = {
+      id: `l${Date.now()}`,
+      timestamp: new Date().toLocaleString(),
+      action,
+      user: userName,
+      status,
+      type
+    };
+    setActivityLogs(prev => [newLog, ...prev]);
+  };
+
   const addDiscount = (discount: Omit<Discount, 'id'>) => {
     const newDiscount: Discount = {
       ...discount,
@@ -541,16 +583,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     setDiscounts(prev => [newDiscount, ...prev]);
 
-    // Log activity
-    const newLog: ActivityLog = {
-      id: `l${activityLogs.length + 1}`,
-      timestamp: new Date().toLocaleString(),
-      action: `New Discount Created: "${newDiscount.title}"`,
-      user: user?.name || 'Owner',
-      status: 'Success',
-      type: 'salon'
-    };
-    setActivityLogs(prev => [newLog, ...prev]);
+    logActivity(`New Discount Created: "${newDiscount.title}"`, user?.name || 'Owner', 'Success', 'salon');
   };
 
   const updateUserProfile = (data: Partial<User>) => {
@@ -559,22 +592,51 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setUser(updatedUser);
     setUsers(prev => prev.map(u => u.id === user.id ? { ...u, ...data } : u));
     
-    // Log activity
-    const newLog: ActivityLog = {
-      id: `l${activityLogs.length + 1}`,
-      timestamp: new Date().toLocaleString(),
-      action: `Profile Updated: ${Object.keys(data).join(', ')}`,
-      user: user.name,
-      status: 'Success',
-      type: 'user'
-    };
-    setActivityLogs(prev => [newLog, ...prev]);
+    logActivity(`Profile Updated: ${Object.keys(data).join(', ')}`, user.name, 'Success', 'user');
   };
+  useEffect(() => {
+    const initAuth = async () => {
+      if (getAccessToken()) {
+        try {
+          await fetchProfile();
+          await Promise.all([
+            fetchStaff(),
+            fetchServices(),
+            fetchBookings(),
+          ]);
+        } catch (err) {
+          console.error('Initial auth fetch failed', err);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+    initAuth();
+  }, []);
+
 
   return (
     <SalonContext.Provider value={{ 
-      user, loading, login, register, logout, services, addService, deleteService, bookings, addBooking, updateBookingStatus, staff, addStaff, updateStaff, deleteStaff, inventory, updateInventory, orderSupplies,
-      salons, addSalon, users, updateUserProfile, discounts, addDiscount, activityLogs
+      user, loading, login, register, logout, services, addService, deleteService, bookings,
+      addBooking,
+      updateBooking,
+      deleteBooking,
+      staff,
+      addStaff,
+      updateStaff,
+      deleteStaff,
+      inventory,
+      updateInventory,
+      orderSupplies,
+      salons,
+      addSalon,
+      users,
+      updateUserProfile,
+      discounts,
+      addDiscount,
+      activityLogs,
     }}>
       {children}
     </SalonContext.Provider>

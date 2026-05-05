@@ -32,6 +32,8 @@ INSTALLED_APPS = [
     "corsheaders",
     "accounts",
     "staffs",
+    "services",
+    "bookings",
 ]
 
 MIDDLEWARE = [
