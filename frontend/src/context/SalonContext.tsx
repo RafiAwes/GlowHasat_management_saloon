@@ -60,6 +60,8 @@ export interface Booking {
   id: string;
   clientId: string;
   clientName: string;
+  clientPhone?: string;
+  clientEmail?: string;
   service: string;
   stylistId: string;
   stylistName: string;
@@ -401,6 +403,8 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     id: item.id,
     clientId: item.client_email || 'walk-in',
     clientName: item.client_name,
+    clientPhone: item.client_phone,
+    clientEmail: item.client_email,
     service: item.service_name,
     stylistId: item.staff,
     stylistName: item.staff_details ? `${item.staff_details.user?.first_name || ''} ${item.staff_details.user?.last_name || ''}`.trim() : 'Unknown',
@@ -426,7 +430,8 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         staff: bookingData.stylistId,
         service_name: bookingData.service,
         client_name: bookingData.clientName,
-        client_email: bookingData.clientId.includes('@') ? bookingData.clientId : '',
+        client_phone: bookingData.clientPhone || '',
+        client_email: bookingData.clientEmail || (bookingData.clientId.includes('@') ? bookingData.clientId : ''),
         date: bookingData.date,
         time: bookingData.time,
         status: bookingData.status,

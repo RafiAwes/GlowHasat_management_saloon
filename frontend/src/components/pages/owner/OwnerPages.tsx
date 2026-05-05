@@ -969,6 +969,7 @@ export const OwnerBookings = () => {
   const [bookingData, setBookingData] = useState({
     clientName: '',
     clientPhone: '',
+    clientEmail: '',
     clientAddress: '',
     service: '',
     stylistId: '',
@@ -979,10 +980,11 @@ export const OwnerBookings = () => {
   });
 
   const handleComplete = () => {
-    // Convert time if necessary or just use the chosen string '09:00 AM'
     addBooking({
-      clientId: `c${Date.now()}`,
+      clientId: bookingData.clientEmail || `c${Date.now()}`,
       clientName: bookingData.clientName || 'Walk-in Client',
+      clientPhone: bookingData.clientPhone,
+      clientEmail: bookingData.clientEmail,
       service: bookingData.service,
       stylistId: bookingData.stylistId,
       stylistName: bookingData.stylistName,
@@ -998,7 +1000,7 @@ export const OwnerBookings = () => {
     setView('list');
     setStep(1);
     setBookingData({
-      clientName: '', clientPhone: '', clientAddress: '', service: '',
+      clientName: '', clientPhone: '', clientEmail: '', clientAddress: '', service: '',
       stylistId: '', stylistName: '', date: new Date().toISOString().split('T')[0], time: '', price: 0
     });
   };
@@ -1053,6 +1055,16 @@ export const OwnerBookings = () => {
                       onChange={(e) => setBookingData({...bookingData, clientPhone: e.target.value})}
                       className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20" 
                       placeholder="e.g. +1 (555) 019-2834" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-salon-gold font-bold ml-1">Email Address (Optional)</label>
+                    <input 
+                      type="email"
+                      value={bookingData.clientEmail}
+                      onChange={(e) => setBookingData({...bookingData, clientEmail: e.target.value})}
+                      className="w-full bg-salon-cream/30 border border-salon-ivory/50 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-salon-gold/20" 
+                      placeholder="e.g. emma@example.com" 
                     />
                   </div>
                   <div className="space-y-2">
@@ -1182,18 +1194,28 @@ export const OwnerBookings = () => {
                         const day = i + 1;
                         const dateStr = `2026-04-${day.toString().padStart(2, '0')}`;
                         const isSelected = bookingData.date === dateStr;
+                        
+                        const selectedStaff = staff.find(s => s.id === bookingData.stylistId);
+                        const dateObj = new Date(dateStr);
+                        const dayName = dateObj.toLocaleString('en-US', { weekday: 'long' });
+                        const isDayOff = selectedStaff?.daysOff?.includes(dayName);
+
                         return (
                           <button
                             key={day}
+                            disabled={isDayOff}
                             onClick={() => setBookingData({ ...bookingData, date: dateStr })}
                             className={cn(
-                              "py-2 text-sm rounded-lg font-medium transition-all",
+                              "py-2 text-sm rounded-lg font-medium transition-all relative",
                               isSelected 
                                 ? "bg-salon-espresso text-white shadow-md" 
-                                : "text-salon-espresso hover:bg-salon-cream/50"
+                                : isDayOff
+                                  ? "text-salon-gold/20 cursor-not-allowed"
+                                  : "text-salon-espresso hover:bg-salon-cream/50"
                             )}
                           >
                             {day}
+                            {isDayOff && <div className="absolute top-1 right-1 w-1 h-1 rounded-full bg-red-400" />}
                           </button>
                         );
                       })}
@@ -1205,20 +1227,33 @@ export const OwnerBookings = () => {
                   <div className="space-y-4">
                     <h4 className="text-sm uppercase tracking-widest font-bold text-salon-gold ml-1">Available Times</h4>
                     <div className="grid grid-cols-3 gap-3">
-                      {['09:00 AM', '10:30 AM', '12:00 PM', '02:30 PM', '04:00 PM', '05:30 PM'].map((t) => (
-                        <button
-                          key={t}
-                          onClick={() => setBookingData({ ...bookingData, time: t })}
-                          className={cn(
-                            "p-3 rounded-xl font-bold text-sm transition-all border",
-                            bookingData.time === t 
-                              ? "bg-salon-espresso text-white border-salon-espresso shadow-lg" 
-                              : "bg-white/50 text-salon-gold border-salon-ivory hover:border-salon-gold/50"
-                          )}
-                        >
-                          {t}
-                        </button>
-                      ))}
+                      {['09:00 AM', '10:30 AM', '12:00 PM', '02:30 PM', '04:00 PM', '05:30 PM'].map((t) => {
+                        const isBooked = bookings.some(b => 
+                          b.date === bookingData.date && 
+                          b.time === t && 
+                          b.stylistId === bookingData.stylistId &&
+                          b.status !== 'cancelled'
+                        );
+
+                        return (
+                          <button
+                            key={t}
+                            disabled={isBooked}
+                            onClick={() => setBookingData({ ...bookingData, time: t })}
+                            className={cn(
+                              "p-3 rounded-xl font-bold text-sm transition-all border",
+                              bookingData.time === t 
+                                ? "bg-salon-espresso text-white border-salon-espresso shadow-lg" 
+                                : isBooked
+                                  ? "bg-salon-cream/50 text-salon-gold/30 border-salon-ivory cursor-not-allowed opacity-50"
+                                  : "bg-white/50 text-salon-gold border-salon-ivory hover:border-salon-gold/50"
+                            )}
+                          >
+                            {t}
+                            {isBooked && <span className="block text-[8px] mt-1 text-red-400">BOOKED</span>}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
